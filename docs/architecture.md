@@ -55,16 +55,16 @@ Telegram User
 
 # Open Source Technology Stack
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Database | HelixDB | Unified Graph + Vector database |
-| Object Storage | MinIO | Persistent storage |
-| Embedding Engine | FastEmbed / ColPali | Local embedding generation |
-| LLM | Ollama / vLLM | Local inference |
-| Backend | Node.js + TypeScript | Application layer |
-| Queue | BullMQ + Redis | Async processing |
-| Telegram Framework | GramIO | Telegram Bot API |
-| Deployment | Docker Compose | Infrastructure |
+| Component          | Technology           | Purpose                         |
+| ------------------ | -------------------- | ------------------------------- |
+| Database           | HelixDB              | Unified Graph + Vector database |
+| Object Storage     | MinIO                | Persistent storage              |
+| Embedding Engine   | FastEmbed / ColPali  | Local embedding generation      |
+| LLM                | Ollama / vLLM        | Local inference                 |
+| Backend            | Node.js + TypeScript | Application layer               |
+| Queue              | BullMQ + Redis       | Async processing                |
+| Telegram Framework | GramIO               | Telegram Bot API                |
+| Deployment         | Docker Compose       | Infrastructure                  |
 
 ---
 
@@ -481,12 +481,12 @@ LLM
 
 # Telegram Rate Limiting
 
-| Scope | Limit |
-|--------|------|
-| Private Chat | ~1 msg/sec |
-| Group Chat | ~20 msg/min |
-| Global | ~30 msg/sec |
-| Read APIs | ~100-150 req/min |
+| Scope        | Limit            |
+| ------------ | ---------------- |
+| Private Chat | ~1 msg/sec       |
+| Group Chat   | ~20 msg/min      |
+| Global       | ~30 msg/sec      |
+| Read APIs    | ~100-150 req/min |
 
 ---
 
@@ -710,12 +710,12 @@ Telegram
 
 # Ban Recovery
 
-| Type | Description |
-|------|-------------|
-| Spam Restriction | Appeal via @SpamBot |
-| Silent Ghosting | Pause queue |
-| Hard Ban | Email recover@telegram.org |
-| IP Block | Infrastructure migration |
+| Type             | Description                |
+| ---------------- | -------------------------- |
+| Spam Restriction | Appeal via @SpamBot        |
+| Silent Ghosting  | Pause queue                |
+| Hard Ban         | Email recover@telegram.org |
+| IP Block         | Infrastructure migration   |
 
 ---
 

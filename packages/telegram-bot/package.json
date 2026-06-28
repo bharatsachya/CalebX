@@ -1,0 +1,19 @@
+{
+  "name": "@calebx/telegram-bot",
+  "version": "1.0.0",
+  "main": "dist/telegram.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx src/telegram.ts"
+  },
+  "dependencies": {
+    "@calebx/core": "*",
+    "@calebx/db": "*",
+    "gramio": "^0.12.0",
+    "dotenv": "^16.4.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
