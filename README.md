@@ -10,7 +10,7 @@ By analyzing chat intents in real-time, CALEBX connects users with like-minded p
 ## 🚀 Features
 
 - **Real-Time Intent Parsing:** Extracts context, sentiment, and named entities (places, topics) from unstructured chat messages on the fly.
-- **Platform Agnostic:** Built to run as a headless backend for WhatsApp Business API and Telegram Bot API.
+- **Platform Agnostic:** Built to run as a headless backend for various platform bots (Telegram, Discord, WhatsApp).
 - **Dual-Engine Recommendations:**
   - _Semantic Matching (Vector DB):_ Finds users with similar conversational "vibes" and interests.
   - _Relational Matching (Graph DB):_ Filters by social proximity (2nd-degree connections) and geographic location.
@@ -18,34 +18,27 @@ By analyzing chat intents in real-time, CALEBX connects users with like-minded p
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ Monorepo & Plug-and-Play Architecture
 
-CALEBX uses an event-driven, decoupled microservices architecture to handle the constraints of third-party chat platforms.
+CALEBX is designed as a **decoupled monorepo** utilizing the Ports and Adapters (Hexagonal) architecture. This ensures that the core domain logic remains constant while all database engines and communication frameworks are easily pluggable.
 
-1. **Ingestion:** Webhooks receive messages from WhatsApp/Telegram, gated by an API Gateway and pushed into a Message Queue (Kafka/RabbitMQ) for asynchronous processing.
-2. **Orchestration (The Brain):** An LLM pipeline reads the queue, checks short-term memory (Redis), and parses the user's intent.
-3. **Retrieval & Scoring:**
-   - **Pinecone/pgvector** fetches semantically similar candidate profiles.
-   - **Neo4j** filters candidates based on geographic and social graphs.
-4. **Delivery:** The top scored matches are formatted natively for the user's specific chat platform.
+```text
+packages/
+  ├── core/            # Domain entities, use-cases, and repository ports (interfaces)
+  ├── telegram-bot/    # Telegram Bot adapter using GramIO
+  └── db/              # Database adapter using HelixDB (Graph + Vector)
+```
+
+For guidelines on coding style and structural constraints, please read the [Developer Contribution Rules](rules/rules.md).
 
 ---
 
 ## 💻 Tech Stack
 
-### Core Infrastructure
-
-- **Language:** Python 3.11+ / Node.js
-- **API Gateway:** Kong / AWS API Gateway
-- **Message Broker:** Apache Kafka / RabbitMQ
-- **Cache/Session State:** Redis
-
-### Data & AI Layer
-
-- **LLM Orchestration:** LangChain / LlamaIndex
-- **Vector Database (Semantic):** Pinecone / Milvus / pgvector
-- **Graph Database (Relational):** Neo4j
-- **Embeddings:** OpenAI `text-embedding-3-small` / HuggingFace
+- **Runtime Engine:** [Bun](https://bun.sh/)
+- **Programming Language:** TypeScript
+- **Telegram Bot Framework:** [GramIO](https://gramio.dev/)
+- **Unified Graph-Vector DB:** [HelixDB](https://github.com/HelixDB/helix-db) (for GraphRAG memory)
 
 ---
 
@@ -53,14 +46,49 @@ CALEBX uses an event-driven, decoupled microservices architecture to handle the 
 
 ### Prerequisites
 
-- Docker & Docker Compose
-- Python 3.11+ or Node.js v18+
-- API Keys for OpenAI/Anthropic, Telegram Bot API, and Twilio (for WhatsApp)
+- [Bun](https://bun.sh/) installed locally
+- Telegram API Bot Token (obtained from `@BotFather`)
 
-### Installation
+### Installation & Execution
 
 1. **Clone the repository:**
+
    ```bash
-   git clone [https://github.com/yourusername/calebx.git](https://github.com/yourusername/calebx.git)
-   cd calebx
+   git clone https://github.com/bharatsachya/CalebX.git
+   cd CalebX
    ```
+
+2. **Install dependencies:**
+
+   ```bash
+   bun install
+   ```
+
+3. **Configure environment variables:**
+   Create a `.env` file at the root:
+
+   ```bash
+   TELEGRAM_BOT_TOKEN="YOUR_BOT_TOKEN_HERE"
+   ```
+
+4. **Build the packages:**
+   Compile the packages in order (dependencies first):
+
+   ```bash
+   npm run build
+   ```
+
+5. **Start the Telegram Bot:**
+   Run the bot in development mode:
+   ```bash
+   bun run bot:start
+   ```
+
+---
+
+## 🚦 Verification & Git Hooks
+
+This project enforces validation workflows to guarantee repository quality and style consistency:
+
+- **Pre-commit hooks** (Husky) auto-runs `bun run commit:validate` which formats staged files using Prettier, blocks large files, scans for secrets via `gitleaks`, and validates that all source directories have a `README.md`.
+- **Pre-push hooks** (Husky) auto-runs `bun run push:validate` which checks for TypeScript compilation errors, Prettier formatting compliance, and linters.
