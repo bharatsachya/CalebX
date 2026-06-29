@@ -287,19 +287,18 @@ Every commit goes through automated gates via **Husky**.
 - ESLint
 
 For naming conventions, package boundaries, and PR guidelines see [`rules/rules.md`](rules/rules.md).
-
 For the full architecture rationale and Claude-specific coding instructions see [`CLAUDE.md`](CLAUDE.md).
 
 ---
 
 ## Roadmap
 
-- [x] Telegram adapter (GramIO)
-- [x] Conversational LLM layer (Ollama, two-stage pipeline)
-- [x] Persona graph (HelixDB PersonaChunks + decay weighting)
-- [x] GraphRAG retrieval (ANN + BM25 hybrid + RRF fusion)
-- [x] Consent gate + `/forget` command
-- [x] Rate-limited dispatch queue with jitter
+- [ ] Telegram adapter (GramIO)
+- [ ] Conversational LLM layer (Ollama, two-stage pipeline)
+- [ ] Persona graph (HelixDB PersonaChunks + decay weighting)
+- [ ] GraphRAG retrieval (ANN + BM25 hybrid + RRF fusion)
+- [ ] Consent gate + `/forget` command
+- [ ] Rate-limited dispatch queue with jitter
 - [ ] WhatsApp adapter (Baileys or Cloud API)
 - [ ] Discord adapter
 - [ ] Persona transparency dashboard (read-only web view of your own graph)
