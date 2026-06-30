@@ -27,4 +27,7 @@ export const config = {
   consentStorePath:
     process.env.CONSENT_STORE_PATH ??
     path.resolve(__dirname, "../../../.data/consent.json"),
+  onboardingStorePath:
+    process.env.ONBOARDING_STORE_PATH ??
+    path.resolve(__dirname, "../../../.data/onboarding.json"),
 } as const;
