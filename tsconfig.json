@@ -10,7 +10,8 @@
     "forceConsistentCasingInFileNames": true,
     "paths": {
       "@calebx/core": ["./packages/core/src/index.ts"],
-      "@calebx/db": ["./packages/db/src/index.ts"]
+      "@calebx/db": ["./packages/db/src/index.ts"],
+      "@calebx/agent": ["./packages/agent/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "**/dist"]
