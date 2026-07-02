@@ -11,6 +11,10 @@
     "paths": {
       "@calebx/core": ["./packages/core/src/index.ts"],
       "@calebx/db": ["./packages/db/src/index.ts"],
+      "@calebx/types": ["./packages/types/src/index.ts"],
+      "@calebx/errors": ["./packages/errors/src/index.ts"],
+      "@calebx/logger": ["./packages/logger/src/index.ts"],
+      "@calebx/config": ["./packages/config/src/index.ts"],
       "@calebx/agent": ["./packages/agent/src/index.ts"]
     }
   },
