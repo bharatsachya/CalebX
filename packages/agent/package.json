@@ -1,13 +1,16 @@
 {
-  "name": "@calebx/db",
+  "name": "@calebx/agent",
   "version": "1.0.0",
   "main": "src/index.ts",
+  "type": "module",
   "scripts": {
     "build": "tsc"
   },
   "dependencies": {
     "@calebx/core": "*",
-    "@helix-db/helix-db": "^2.0.5"
+    "openai": "^4.104.0",
+    "mem0ai": "^2.1.9",
+    "dotenv": "^16.4.5"
   },
   "peerDependencies": {
     "typescript": "^5.4.5"

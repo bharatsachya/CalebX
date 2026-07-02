@@ -1,7 +1,7 @@
 {
   "name": "@calebx/telegram-bot",
   "version": "1.0.0",
-  "main": "dist/telegram.js",
+  "main": "src/telegram.ts",
   "type": "module",
   "scripts": {
     "build": "tsc",
@@ -10,6 +10,7 @@
   "dependencies": {
     "@calebx/core": "*",
     "@calebx/db": "*",
+    "@calebx/agent": "*",
     "gramio": "^0.12.0",
     "dotenv": "^16.4.5"
   },

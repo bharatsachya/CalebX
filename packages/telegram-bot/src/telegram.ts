@@ -1,55 +1,91 @@
 import { Bot } from "gramio";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
 import { HelixUserRepository } from "@calebx/db";
+import { runAgent, addMemory } from "@calebx/agent";
+import { config } from "./config.ts";
+import { FileConsentStore } from "./file-consent.store.ts";
+import { registerConsentGate } from "./consent.gate.ts";
+import { FileOnboardingStore } from "./onboarding.store.ts";
+import {
+  registerOnboardingHandlers,
+  resumeOnboarding,
+} from "./onboarding.gate.ts";
+import {
+  ACCEPTED_MESSAGE,
+  CONSENT_ACCEPT,
+  CONSENT_DECLINE,
+  consentKeyboard,
+  DECLINED_MESSAGE,
+  FORGOTTEN_MESSAGE,
+  ONBOARDING_NAME_QUESTION,
+  PRIVACY_NOTICE,
+  WELCOME_BACK,
+} from "./messages.ts";
 
-// Resolve paths to find .env at the monorepo root
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
-
-// Ensure BOT_TOKEN is loaded
-const botToken = process.env.TELEGRAM_BOT_TOKEN;
-if (!botToken || botToken === "YOUR_TELEGRAM_BOT_TOKEN_HERE") {
-  console.error("❌ Error: TELEGRAM_BOT_TOKEN is not set in your .env file!");
-  process.exit(1);
-}
-
-// Instantiate our plug-and-play UserRepository adapter (HelixDB backend under the hood)
+const consent = new FileConsentStore(config.consentStorePath);
+const onboarding = new FileOnboardingStore(config.onboardingStorePath);
 const userRepo = new HelixUserRepository();
 
-const bot = new Bot(botToken)
-  .command("start", async (context) => {
-    const telegramId = context.from?.id;
-    if (!telegramId) {
-      return context.send("Hello! I couldn't identify your Telegram user ID.");
-    }
+const bot = new Bot(config.telegramBotToken);
 
-    try {
-      // Plug-and-play: check if user exists, if not create them using our Repository interface
-      let user = await userRepo.getUserByTelegramId(telegramId);
-      let isNew = false;
-      if (!user) {
-        user = await userRepo.createUser(telegramId);
-        isNew = true;
-      }
+// 1) Consent gate FIRST — before any handler that could ingest data.
+registerConsentGate(bot, consent);
 
-      const greeting = isNew
-        ? `Hello! Welcome to CalebX. A new user profile has been created for your Telegram ID: ${telegramId}.`
-        : `Welcome back to CalebX! Your profile is active (Telegram ID: ${telegramId}).`;
+// 2) Onboarding handlers — after consent gate, before message handler.
+registerOnboardingHandlers(bot, onboarding, addMemory);
 
-      return context.send(greeting);
-    } catch (error) {
-      console.error("Error checking or creating user:", error);
-      return context.send(
-        "Hello! There was an error loading or creating your user profile.",
-      );
-    }
-  })
-  .onStart(({ info }) =>
-    console.log(`✨ Bot @${info.username} is starting up and polling...`),
-  );
+// 3) /start — privacy notice, or resume onboarding, or welcome back.
+bot.command("start", async (context) => {
+  const telegramId = context.from.id;
+  if ((await consent.get(telegramId)) === "granted") {
+    const record = await onboarding.get(telegramId);
+    if (record.step === "complete") return context.send(WELCOME_BACK);
+    return resumeOnboarding(context, record);
+  }
+  return context.send(PRIVACY_NOTICE, { reply_markup: consentKeyboard });
+});
+
+// 4) Consent — Accept. User record created; onboarding sequence begins.
+bot.callbackQuery(CONSENT_ACCEPT, async (context) => {
+  const telegramId = context.from?.id;
+  if (telegramId === undefined) return context.answer();
+  await consent.set(telegramId, "granted");
+  await userRepo.createUser(telegramId);
+  await context.answer("Thanks!");
+  await context.editText(ACCEPTED_MESSAGE).catch(() => undefined);
+  await onboarding.set(telegramId, { step: "pending_name" });
+  await context.send(ONBOARDING_NAME_QUESTION);
+});
+
+// 5) Consent — Decline.
+bot.callbackQuery(CONSENT_DECLINE, async (context) => {
+  const telegramId = context.from?.id;
+  if (telegramId !== undefined) await consent.set(telegramId, "declined");
+  await context.answer();
+  await context.editText(DECLINED_MESSAGE).catch(() => undefined);
+});
+
+// 6) /forget — revoke consent and erase onboarding record.
+bot.command("forget", async (context) => {
+  const telegramId = context.from.id;
+  await consent.delete(telegramId);
+  await onboarding.delete(telegramId);
+  return context.send(FORGOTTEN_MESSAGE);
+});
+
+// 7) Any other message — only reached when consent is granted AND onboarding is complete.
+bot.on("message", async (context) => {
+  const text = typeof context.text === "string" ? context.text : "";
+  if (text.startsWith("/") || text.trim() === "") return;
+  const reply = await runAgent(context.from.id, text);
+  return context.send(reply);
+});
+
+bot.onStart(({ info }) =>
+  console.log(
+    `✨ @${info.username} up and polling (consent + onboarding gates active).`,
+  ),
+);
 
 bot.start();
+
 export default bot;
