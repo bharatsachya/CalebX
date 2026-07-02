@@ -14,7 +14,7 @@
       "@calebx/types": ["./packages/types/src/index.ts"],
       "@calebx/errors": ["./packages/errors/src/index.ts"],
       "@calebx/logger": ["./packages/logger/src/index.ts"],
-      "@calebx/config": ["./packages/config/src/index.ts"]
+      "@calebx/config": ["./packages/config/src/index.ts"],
       "@calebx/agent": ["./packages/agent/src/index.ts"]
     }
   },
