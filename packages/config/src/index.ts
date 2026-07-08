@@ -1,37 +1,41 @@
-import dotenv from "dotenv";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
-// Load the root .env before parsing. ESM evaluates this module (and its
-// process.env read) before any consumer's own dotenv.config() runs, so the
-// config package must load its own environment to be import-order-safe.
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
-
+/**
+ * Environment schema. Validated against the Cloudflare Worker `env` binding at the
+ * first request (Workers deliver secrets per-request, not via a file), or against
+ * `process.env` for local Bun scripts (Bun auto-loads `.env`). There is no dotenv
+ * here and no `process.exit` — `loadConfig` throws a clear error instead, which the
+ * Worker turns into a 500 and a script turns into a non-zero exit.
+ */
 export const ConfigSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .default("info"),
 
   // Telegram
   TELEGRAM_BOT_TOKEN: z
-    .string({
-      required_error: "TELEGRAM_BOT_TOKEN environment variable is required",
-    })
+    .string({ required_error: "TELEGRAM_BOT_TOKEN is required" })
     .min(20, "TELEGRAM_BOT_TOKEN must be at least 20 characters long"),
+  // Shared secret Telegram echoes back in the X-Telegram-Bot-Api-Secret-Token
+  // header on every webhook call; the webhook handler rejects mismatches.
+  TELEGRAM_WEBHOOK_SECRET: z
+    .string({ required_error: "TELEGRAM_WEBHOOK_SECRET is required" })
+    .min(1, "TELEGRAM_WEBHOOK_SECRET is required"),
 
-  // Neo4j (user provides their own instance — e.g. Aura free tier)
-  NEO4J_URI: z.string().min(1, "NEO4J_URI is required"),
+  // Neo4j Aura — HTTP Query API (Bolt/TCP is unavailable on Workers).
+  // e.g. https://<dbid>.databases.neo4j.io/db/neo4j/query/v2
+  NEO4J_HTTP_URL: z
+    .string()
+    .url(
+      "NEO4J_HTTP_URL must be the Query API URL, e.g. https://<host>/db/neo4j/query/v2",
+    ),
   NEO4J_USERNAME: z.string().default("neo4j"),
   NEO4J_PASSWORD: z.string().min(1, "NEO4J_PASSWORD is required"),
 
-  // LLM (OpenRouter free tier)
-  OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
-  OPENROUTER_MODEL: z.string().default("meta-llama/llama-3.1-8b-instruct:free"),
+  // LLM — Google AI Studio (Gemini API).
+  GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
+  GEMINI_MODEL: z.string().default("gemini-2.5-flash"),
 
   // Tuning
   MAX_DAILY_MESSAGES: z.coerce.number().default(20),
@@ -41,21 +45,40 @@ export const ConfigSchema = z.object({
 
 export type Config = z.infer<typeof ConfigSchema>;
 
-let parsedConfig: Config;
+let cached: Config | null = null;
 
-try {
-  parsedConfig = ConfigSchema.parse(process.env);
-} catch (error) {
-  if (error instanceof z.ZodError) {
-    console.error("❌ Invalid environment configuration:");
-    for (const err of error.errors) {
-      console.error(`   - ${err.path.join(".")}: ${err.message}`);
-    }
-  } else {
-    console.error("❌ Configuration parse error:", error);
+/**
+ * Validates and caches config from a source of env values (the Worker `env`
+ * binding or `process.env`). Idempotent: the first successful call wins for the
+ * lifetime of the isolate/process; later calls return the cached value. Unknown
+ * keys on the source (e.g. the KV binding object) are ignored by the schema.
+ *
+ * @throws Error with a human-readable list of the invalid/missing keys.
+ */
+export function loadConfig(env: Record<string, unknown>): Config {
+  if (cached) return cached;
+  const result = ConfigSchema.safeParse(env);
+  if (!result.success) {
+    const lines = result.error.errors.map(
+      (e) => `   - ${e.path.join(".")}: ${e.message}`,
+    );
+    throw new Error(`Invalid environment configuration:\n${lines.join("\n")}`);
   }
-  process.exit(1);
+  cached = result.data;
+  return cached;
 }
 
-export const config = parsedConfig;
-export default config;
+/**
+ * Returns the config loaded by `loadConfig`. Downstream packages (db, agent) call
+ * this from inside request handlers, after the Worker entry has called loadConfig(env).
+ *
+ * @throws Error if `loadConfig` has not run yet.
+ */
+export function getConfig(): Config {
+  if (!cached) {
+    throw new Error(
+      "Config not loaded. Call loadConfig(env) at the Worker entry before getConfig().",
+    );
+  }
+  return cached;
+}

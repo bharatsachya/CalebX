@@ -8,8 +8,7 @@
   "dependencies": {
     "@calebx/core": "*",
     "@calebx/config": "*",
-    "@calebx/errors": "*",
-    "neo4j-driver": "^6.2.0"
+    "@calebx/errors": "*"
   },
   "peerDependencies": {
     "typescript": "^5.4.5"

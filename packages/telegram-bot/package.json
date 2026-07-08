@@ -1,11 +1,13 @@
 {
   "name": "@calebx/telegram-bot",
   "version": "1.0.0",
-  "main": "src/telegram.ts",
+  "main": "src/worker.ts",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "bun src/telegram.ts"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
     "@calebx/core": "*",
@@ -13,8 +15,10 @@
     "@calebx/agent": "*",
     "@calebx/config": "*",
     "@calebx/types": "*",
-    "gramio": "^0.12.0",
-    "dotenv": "^16.4.5"
+    "gramio": "^0.12.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.108.0"
   },
   "peerDependencies": {
     "typescript": "^5.4.5"

@@ -6,9 +6,9 @@
   ],
   "scripts": {
     "build": "bun run --filter \"*\" build",
-    "bot:start": "bun --cwd packages/telegram-bot start",
+    "dev": "bun --cwd packages/telegram-bot run dev",
+    "deploy": "bun --cwd packages/telegram-bot run deploy",
     "db:migrate": "bun run packages/db/scripts/migrate.ts",
-    "recommend:daily": "bun run scripts/daily-recommend.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",

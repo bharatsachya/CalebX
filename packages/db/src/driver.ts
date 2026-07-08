@@ -1,53 +1,98 @@
-import neo4j, { type Driver, type QueryResult } from "neo4j-driver";
-import { config } from "@calebx/config";
+import { getConfig } from "@calebx/config";
 import { Neo4jError } from "@calebx/errors";
 
-let driver: Driver | null = null;
+/**
+ * Neo4j transport over the Aura **HTTP Query API** (POST /db/neo4j/query/v2).
+ * Cloudflare Workers cannot open raw TCP, so the Bolt driver is unavailable — the
+ * Query API is the officially-supported HTTPS alternative and works from any
+ * `fetch` runtime (Workers, Bun, Node). Cypher is unchanged; only the transport moved.
+ */
 
-/** Lazily-created shared driver. Neo4j drivers are connection pools — one per process. */
-export function getDriver(): Driver {
-  if (driver === null) {
-    driver = neo4j.driver(
-      config.NEO4J_URI,
-      neo4j.auth.basic(config.NEO4J_USERNAME, config.NEO4J_PASSWORD),
-    );
-  }
-  return driver;
+/** One result row, keyed by RETURN alias — mirrors the Bolt driver's Record.get(). */
+export interface Neo4jRow {
+  get(field: string): unknown;
 }
 
-/** Runs a Cypher statement in an auto-commit session, mapping failures to Neo4jError. */
+export interface RunResult {
+  records: Neo4jRow[];
+}
+
+interface QueryApiResponse {
+  data?: { fields: string[]; values: unknown[][] };
+  errors?: { code?: string; error?: string; message?: string }[];
+}
+
+/** Runs a Cypher statement via the Query API, mapping failures to Neo4jError. */
 export async function run(
   cypher: string,
   params: Record<string, unknown> = {},
-): Promise<QueryResult> {
-  const session = getDriver().session();
+): Promise<RunResult> {
+  const config = getConfig();
+  const auth = btoa(`${config.NEO4J_USERNAME}:${config.NEO4J_PASSWORD}`);
+
+  let response: Response;
   try {
-    return await session.run(cypher, params);
+    response = await fetch(config.NEO4J_HTTP_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ statement: cypher, parameters: params }),
+    });
   } catch (error) {
     throw new Neo4jError(
-      error instanceof Error ? error.message : "Neo4j query failed",
+      error instanceof Error ? error.message : "Neo4j request failed",
       error,
     );
-  } finally {
-    await session.close();
   }
-}
 
-/** Closes the shared driver. Call at process shutdown or end of a one-off script. */
-export async function closeDriver(): Promise<void> {
-  if (driver !== null) {
-    await driver.close();
-    driver = null;
+  let body: QueryApiResponse;
+  try {
+    body = (await response.json()) as QueryApiResponse;
+  } catch {
+    throw new Neo4jError(
+      `Neo4j returned a non-JSON response (HTTP ${response.status})`,
+    );
   }
+
+  if (!response.ok || (body.errors && body.errors.length > 0)) {
+    const first = body.errors?.[0];
+    const message =
+      first?.message ??
+      first?.error ??
+      `Neo4j query failed (HTTP ${response.status})`;
+    throw new Neo4jError(message, body.errors);
+  }
+
+  const fields = body.data?.fields ?? [];
+  const values = body.data?.values ?? [];
+  const indexOf = new Map(fields.map((field, i) => [field, i]));
+
+  const records: Neo4jRow[] = values.map((row) => ({
+    get(field: string): unknown {
+      const i = indexOf.get(field);
+      return i === undefined ? undefined : row[i];
+    },
+  }));
+
+  return { records };
 }
 
 /**
- * Neo4j returns 64-bit ints as {low, high} Integer objects (or bigint in newer
- * drivers). Coerce to a JS number for our small telegram-id / timestamp values.
+ * No-op retained so one-off scripts (migrate) keep the same shutdown call. The HTTP
+ * transport is stateless — there is no connection pool to drain.
+ */
+export async function closeDriver(): Promise<void> {}
+
+/**
+ * The Query API returns integers as plain JSON numbers (or strings for values beyond
+ * JS's safe range) — no more Bolt {low, high} Integer objects. Coerce to a number.
  */
 export function toNumber(value: unknown): number {
   if (typeof value === "number") return value;
   if (typeof value === "bigint") return Number(value);
-  if (neo4j.isInt(value)) return value.toNumber();
+  if (typeof value === "string") return Number(value);
   return Number(value);
 }

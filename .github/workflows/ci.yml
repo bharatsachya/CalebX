@@ -31,3 +31,27 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
+
+  deploy:
+    name: Deploy (Cloudflare Workers)
+    runs-on: ubuntu-latest
+    needs: [format-check, build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      # Secrets (TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, NEO4J_HTTP_URL,
+      # NEO4J_PASSWORD, GEMINI_API_KEY) are set once via `wrangler secret put`,
+      # not here — this job only ships code + wrangler.jsonc vars/bindings.
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/telegram-bot
+          command: deploy

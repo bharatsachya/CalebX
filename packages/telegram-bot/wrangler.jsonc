@@ -1,0 +1,39 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "calebx-bot",
+  "main": "src/worker.ts",
+  // nodejs_compat is enabled from this date; it backstops gramio's `debug` dependency.
+  "compatibility_date": "2024-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Ephemeral short-term session buffer (recent turns + daily counter).
+  // Create the namespace once: `wrangler kv namespace create SESSIONS`
+  // then paste the returned id below.
+  "kv_namespaces": [
+    {
+      "binding": "SESSIONS",
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ],
+
+  // Non-secret configuration. Secrets (TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET,
+  // NEO4J_HTTP_URL, NEO4J_PASSWORD, GEMINI_API_KEY) are set with `wrangler secret put`.
+  "vars": {
+    "NODE_ENV": "production",
+    "LOG_LEVEL": "info",
+    "NEO4J_USERNAME": "neo4j",
+    "GEMINI_MODEL": "gemini-2.5-flash",
+    "MAX_DAILY_MESSAGES": "20",
+    "MIN_MATCH_SCORE": "3",
+    "SUMMARIZE_MIN_TURNS": "4"
+  },
+
+  // Daily matchmaking run at 09:00 UTC → worker.scheduled().
+  "triggers": {
+    "crons": ["0 9 * * *"]
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}

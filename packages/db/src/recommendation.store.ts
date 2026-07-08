@@ -4,8 +4,7 @@ import type {
   RecommendationStatus,
   RecommendationView,
 } from "@calebx/types";
-import type { Record as Neo4jRecord } from "neo4j-driver";
-import { run, toNumber } from "./driver.ts";
+import { run, toNumber, type Neo4jRow } from "./driver.ts";
 
 /**
  * A RECOMMENDED edge is stored directed (a)-[:RECOMMENDED]->(b); `a` is the start
@@ -18,7 +17,7 @@ const RETURN_CLAUSE = `RETURN r.id AS id, a.telegram_id AS aId, b.telegram_id AS
        r.score AS score, r.shared AS shared, r.status AS status,
        r.a_accepted AS aAccepted, r.b_accepted AS bAccepted, r.created_at AS createdAt`;
 
-function mapRecord(record: Neo4jRecord): RecommendationRecord {
+function mapRecord(record: Neo4jRow): RecommendationRecord {
   return {
     id: record.get("id") as string,
     aTelegramId: toNumber(record.get("aId")),
@@ -43,7 +42,7 @@ const VIEW_RETURN = `WITH r,
             other.city AS city, other.username AS username, other.photo_file_id AS photoFileId,
             r.created_at AS createdAt`;
 
-function mapView(record: Neo4jRecord): RecommendationView {
+function mapView(record: Neo4jRow): RecommendationView {
   const status = record.get("status") as RecommendationStatus;
   const view: RecommendationView = {
     id: record.get("id") as string,

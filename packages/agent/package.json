@@ -9,8 +9,7 @@
   "dependencies": {
     "@calebx/config": "*",
     "@calebx/errors": "*",
-    "@calebx/types": "*",
-    "openai": "^4.104.0"
+    "@calebx/types": "*"
   },
   "peerDependencies": {
     "typescript": "^5.4.5"

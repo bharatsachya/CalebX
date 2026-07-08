@@ -1,6 +1,5 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import path from "node:path";
 import type { SessionTurn } from "@calebx/types";
+import type { KvNamespace } from "./env.ts";
 
 export interface SessionRecord {
   turns: SessionTurn[];
@@ -18,7 +17,9 @@ export interface SessionStore {
   allIds(): Promise<number[]>;
 }
 
-type Ledger = Record<string, SessionRecord>;
+const KEY_PREFIX = "session:";
+/** Buffers self-expire after 48h of inactivity — raw text never lingers. */
+const TTL_SECONDS = 60 * 60 * 48;
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -29,67 +30,54 @@ export function emptySession(): SessionRecord {
 }
 
 /**
- * File-backed short-term session buffer. Holds recent turns + a per-day message
- * counter for each user. Same atomic temp-file+rename pattern as the other stores.
- * Never persisted to Neo4j — raw text lives only here, and only transiently.
+ * KV-backed short-term session buffer. Holds recent turns + a per-day message
+ * counter for each user under `session:{telegramId}`. Ephemeral by design (TTL'd,
+ * never persisted to Neo4j) — the same contract the file store had, minus the disk.
  */
-export class FileSessionStore implements SessionStore {
-  private readonly filePath: string;
-  private ledger: Ledger = {};
-  private loaded = false;
-  private writeChain: Promise<void> = Promise.resolve();
+export class KvSessionStore implements SessionStore {
+  constructor(private readonly kv: KvNamespace) {}
 
-  constructor(filePath: string) {
-    this.filePath = filePath;
-  }
-
-  private async ensureLoaded(): Promise<void> {
-    if (this.loaded) return;
-    try {
-      const raw = await readFile(this.filePath, "utf8");
-      this.ledger = JSON.parse(raw) as Ledger;
-    } catch {
-      this.ledger = {};
-    }
-    this.loaded = true;
+  private key(telegramId: number): string {
+    return `${KEY_PREFIX}${telegramId}`;
   }
 
   async get(telegramId: number): Promise<SessionRecord> {
-    await this.ensureLoaded();
-    const record = this.ledger[String(telegramId)];
-    if (record === undefined) return emptySession();
-    // Roll the daily counter over at midnight.
+    const raw = await this.kv.get(this.key(telegramId));
+    if (raw === null) return emptySession();
+    let record: SessionRecord;
+    try {
+      record = JSON.parse(raw) as SessionRecord;
+    } catch {
+      return emptySession();
+    }
+    // Roll the daily counter over at midnight (buffer survives, count resets).
     if (record.day !== today()) {
-      return { turns: record.turns, dailyCount: 0, day: today() };
+      return { turns: record.turns ?? [], dailyCount: 0, day: today() };
     }
     return record;
   }
 
   async set(telegramId: number, record: SessionRecord): Promise<void> {
-    await this.ensureLoaded();
-    this.ledger[String(telegramId)] = record;
-    await this.persist();
+    await this.kv.put(this.key(telegramId), JSON.stringify(record), {
+      expirationTtl: TTL_SECONDS,
+    });
   }
 
   async delete(telegramId: number): Promise<void> {
-    await this.ensureLoaded();
-    delete this.ledger[String(telegramId)];
-    await this.persist();
+    await this.kv.delete(this.key(telegramId));
   }
 
   async allIds(): Promise<number[]> {
-    await this.ensureLoaded();
-    return Object.keys(this.ledger).map(Number);
-  }
-
-  private persist(): Promise<void> {
-    const snapshot = JSON.stringify(this.ledger, null, 2);
-    this.writeChain = this.writeChain.then(async () => {
-      await mkdir(path.dirname(this.filePath), { recursive: true });
-      const tmp = `${this.filePath}.tmp`;
-      await writeFile(tmp, snapshot, "utf8");
-      await rename(tmp, this.filePath);
-    });
-    return this.writeChain;
+    const ids: number[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await this.kv.list({ prefix: KEY_PREFIX, cursor });
+      for (const entry of page.keys) {
+        const id = Number(entry.name.slice(KEY_PREFIX.length));
+        if (Number.isFinite(id)) ids.push(id);
+      }
+      cursor = page.list_complete ? undefined : page.cursor;
+    } while (cursor);
+    return ids;
   }
 }

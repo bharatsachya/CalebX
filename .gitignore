@@ -10,6 +10,10 @@ out/
 .env.local
 .env.*.local
 
+# Cloudflare Worker local secrets + build cache
+.dev.vars
+.wrangler/
+
 # OS files
 .DS_Store
 Thumbs.db

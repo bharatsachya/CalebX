@@ -1,0 +1,19 @@
+# Local secrets for `wrangler dev`. Copy to `.dev.vars` (gitignored) and fill in.
+# In production these are set with `wrangler secret put <NAME>` instead.
+
+TELEGRAM_BOT_TOKEN=
+# Any long random string; must match the secret_token passed to setWebhook.
+TELEGRAM_WEBHOOK_SECRET=
+
+# Neo4j Aura HTTP Query API URL: https://<dbid>.databases.neo4j.io/db/neo4j/query/v2
+NEO4J_HTTP_URL=
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=
+
+# Google AI Studio (Gemini) API key.
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+
+MAX_DAILY_MESSAGES=20
+MIN_MATCH_SCORE=3
+SUMMARIZE_MIN_TURNS=4
