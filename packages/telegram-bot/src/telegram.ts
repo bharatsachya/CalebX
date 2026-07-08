@@ -1,14 +1,21 @@
 import { Bot } from "gramio";
-import { HelixUserRepository } from "@calebx/db";
-import { runAgent, addMemory } from "@calebx/agent";
+import {
+  Neo4jUserRepository,
+  Neo4jSummaryStore,
+  Neo4jRecommendationStore,
+} from "@calebx/db";
+import { config as env } from "@calebx/config";
 import { config } from "./config.ts";
 import { FileConsentStore } from "./file-consent.store.ts";
 import { registerConsentGate } from "./consent.gate.ts";
 import { FileOnboardingStore } from "./onboarding.store.ts";
+import { FileSessionStore } from "./session.store.ts";
 import {
   registerOnboardingHandlers,
   resumeOnboarding,
 } from "./onboarding.gate.ts";
+import { registerRecommendationHandlers } from "./recommend.handlers.ts";
+import { registerChatHandlers } from "./chat.handlers.ts";
 import {
   ACCEPTED_MESSAGE,
   CONSENT_ACCEPT,
@@ -23,15 +30,18 @@ import {
 
 const consent = new FileConsentStore(config.consentStorePath);
 const onboarding = new FileOnboardingStore(config.onboardingStorePath);
-const userRepo = new HelixUserRepository();
+const session = new FileSessionStore(config.sessionStorePath);
+const userRepo = new Neo4jUserRepository();
+const summaryStore = new Neo4jSummaryStore();
+const recStore = new Neo4jRecommendationStore();
 
 const bot = new Bot(config.telegramBotToken);
 
 // 1) Consent gate FIRST — before any handler that could ingest data.
 registerConsentGate(bot, consent);
 
-// 2) Onboarding handlers — after consent gate, before message handler.
-registerOnboardingHandlers(bot, onboarding, addMemory);
+// 2) Onboarding — after consent, before the chat handler.
+registerOnboardingHandlers(bot, onboarding, userRepo);
 
 // 3) /start — privacy notice, or resume onboarding, or welcome back.
 bot.command("start", async (context) => {
@@ -49,7 +59,9 @@ bot.callbackQuery(CONSENT_ACCEPT, async (context) => {
   const telegramId = context.from?.id;
   if (telegramId === undefined) return context.answer();
   await consent.set(telegramId, "granted");
-  await userRepo.createUser(telegramId);
+  await userRepo.createUser(telegramId, {
+    username: context.from?.username ?? "",
+  });
   await context.answer("Thanks!");
   await context.editText(ACCEPTED_MESSAGE).catch(() => undefined);
   await onboarding.set(telegramId, { step: "pending_name" });
@@ -64,20 +76,26 @@ bot.callbackQuery(CONSENT_DECLINE, async (context) => {
   await context.editText(DECLINED_MESSAGE).catch(() => undefined);
 });
 
-// 6) /forget — revoke consent and erase onboarding record.
+// 6) /forget — revoke consent and erase everything derived from this user.
 bot.command("forget", async (context) => {
   const telegramId = context.from.id;
+  await userRepo.deleteUser(telegramId);
+  await session.delete(telegramId);
   await consent.delete(telegramId);
   await onboarding.delete(telegramId);
   return context.send(FORGOTTEN_MESSAGE);
 });
 
-// 7) Any other message — only reached when consent is granted AND onboarding is complete.
-bot.on("message", async (context) => {
-  const text = typeof context.text === "string" ? context.text : "";
-  if (text.startsWith("/") || text.trim() === "") return;
-  const reply = await runAgent(context.from.id, text);
-  return context.send(reply);
+// 7) Recommendation callbacks (Say hi / Skip) + /matches.
+registerRecommendationHandlers(bot, recStore);
+
+// 8) Chat + photo handler — reached only after consent + onboarding complete.
+registerChatHandlers(bot, {
+  session,
+  onboarding,
+  summaryStore,
+  userRepo,
+  maxDailyMessages: env.MAX_DAILY_MESSAGES,
 });
 
 bot.onStart(({ info }) =>

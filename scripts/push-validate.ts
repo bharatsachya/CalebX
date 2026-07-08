@@ -21,12 +21,6 @@ function runStep(name: string, cmd: string, args: string[]): StepResult {
   return { name, status: "fail", detail: `exit ${r.status ?? "?"}` };
 }
 
-function runOptional(name: string, reason: string): StepResult {
-  logger.info("");
-  logger.info(`${BOLD}▶ ${name}${RESET}  ${DIM}— ${reason}${RESET}`);
-  return { name, status: "skip", detail: reason };
-}
-
 function summary(results: StepResult[]): void {
   logger.info("");
   logger.info(`${BOLD}Pre-push summary${RESET}`);
@@ -52,7 +46,7 @@ async function main(): Promise<void> {
   results.push(
     runStep("format check (full repo)", "bun", ["run", "format:check"]),
   );
-  results.push(runOptional("tests", "no test runner configured yet"));
+  results.push(runStep("tests", "bun", ["test"]));
   summary(results);
   const failed = results.filter((r) => r.status === "fail");
   if (failed.length > 0) {

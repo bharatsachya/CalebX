@@ -1,45 +1,65 @@
+import type { SessionTurn, SummaryRecord } from "@calebx/types";
+
+export interface AgentProfile {
+  name: string;
+  city: string;
+  purpose: string;
+}
+
 /**
- * Stage 2 system prompt — CALEBX personality.
- * Memories are injected before each response call so the model has context
- * about who this user is without being told it's a database lookup.
+ * Stage 2 system prompt — CALEBX personality. Past summaries give long-term context
+ * about who this person is, without telling the model it's a database lookup.
  */
-export function buildResponsePrompt(memories: string[]): string {
+export function buildResponsePrompt(
+  profile: AgentProfile,
+  summaries: SummaryRecord[],
+): string {
   const memoryBlock =
-    memories.length > 0
-      ? `\n\nThings you remember about this person:\n${memories.map((m) => `- ${m}`).join("\n")}`
+    summaries.length > 0
+      ? `\n\nWhat you already know about ${profile.name || "them"}:\n${summaries
+          .map((s) => `- ${s.text}`)
+          .join("\n")}`
       : "";
 
   return `You are CALEBX, a city-smart conversational companion on Telegram.
 You talk like a knowledgeable local friend, not a search engine.
 Your job is to understand who this person is through conversation, and
-occasionally — when it feels natural — connect them with people, places,
-or communities that match their vibe.
+occasionally — when it feels natural — connect them with people who match their vibe.
+
+About them: name ${profile.name || "unknown"}, based in ${profile.city || "unknown"}, here to ${profile.purpose || "explore"}.
 
 Rules:
 - Never ask more than one question per message.
 - Never mention databases, vectors, AI, or internal systems.
-- When you don't have enough context to recommend, keep talking. Build the picture.
 - Respond naturally to whatever the user says, even off-topic.
-- When surfacing a recommendation, frame it as a suggestion, not a result set.
 - Keep replies warm and concise — this is Telegram, not an essay.${memoryBlock}`;
 }
 
+/** Renders recent turns as the user-content for the response call. */
+export function renderTurns(
+  recentTurns: SessionTurn[],
+  message: string,
+): string {
+  const history = recentTurns
+    .map((t) => `${t.role === "user" ? "Them" : "You"}: ${t.text}`)
+    .join("\n");
+  return history.length > 0 ? `${history}\nThem: ${message}` : message;
+}
+
 /**
- * Stage 1 system prompt — structured extraction.
- * The model must return valid JSON only. No prose, no markdown wrapper.
+ * Summarization prompt — distills a chat session into one paragraph plus interest
+ * tags. Must return valid JSON only.
  */
-export const EXTRACTION_PROMPT = `You are a structured data extractor. Given a single Telegram message, extract a JSON object with this exact shape:
+export const SUMMARIZE_PROMPT = `You distill a Telegram chat session into a compact persona note.
+Given the conversation, return ONLY valid JSON with this exact shape:
 
 {
-  "intents": string[],
-  "entities": string[],
-  "sentiment": "positive" | "negative" | "neutral",
-  "location_hint": string | null
+  "summary": string,
+  "interests": string[]
 }
 
 Rules:
-- intents: what the user wants or is trying to do (e.g. ["find a cafe", "vent about work"])
-- entities: named things — people, places, brands, activities (e.g. ["Shoreditch", "yoga", "Blue Bottle"])
-- sentiment: overall emotional tone of this message
-- location_hint: city or neighbourhood if mentioned, otherwise null
+- summary: 1-3 sentences capturing who this person is — their interests, what they're
+  looking for, their vibe. Written about them in third person.
+- interests: 3-8 short lowercase tags (e.g. ["hiking", "specialty coffee", "live music"]).
 - Return ONLY valid JSON. No prose, no markdown, no code block wrapper.`;

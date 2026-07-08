@@ -1,3 +1,11 @@
 # Core Package
 
-This package contains the core business logic of CalebX. It defines domain entities, use cases, and repository interfaces (ports) to keep the system decoupled from external platforms (e.g., Telegram) and databases (e.g., HelixDB).
+Core business logic of CalebX: domain entities, the pure matching use-case, and
+repository ports (interfaces) that keep the system decoupled from external platforms
+(e.g., Telegram) and databases (e.g., Neo4j).
+
+- `entities.ts` — `User`, `UserProfile`.
+- `ports.ts` — `IUserRepository`, `ISummaryStore`, `IRecommendationStore`.
+- `matching.ts` — pure compatibility scoring + greedy pair selection (`pickRecommendations`).
+
+Imports `@calebx/types` only. No adapter/platform code lives here.

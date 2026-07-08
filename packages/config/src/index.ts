@@ -1,4 +1,13 @@
+import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
+
+// Load the root .env before parsing. ESM evaluates this module (and its
+// process.env read) before any consumer's own dotenv.config() runs, so the
+// config package must load its own environment to be import-order-safe.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 export const ConfigSchema = z.object({
   NODE_ENV: z
@@ -15,26 +24,23 @@ export const ConfigSchema = z.object({
     })
     .min(20, "TELEGRAM_BOT_TOKEN must be at least 20 characters long"),
 
-  // HelixDB
-  HELIX_URL: z.string().url().default("http://localhost:6969"),
+  // Neo4j (user provides their own instance — e.g. Aura free tier)
+  NEO4J_URI: z.string().min(1, "NEO4J_URI is required"),
+  NEO4J_USERNAME: z.string().default("neo4j"),
+  NEO4J_PASSWORD: z.string().min(1, "NEO4J_PASSWORD is required"),
 
-  // Redis / BullMQ
-  REDIS_URL: z.string().url().default("redis://localhost:6379"),
+  // LLM (OpenRouter free tier)
+  OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
+  OPENROUTER_MODEL: z.string().default("meta-llama/llama-3.1-8b-instruct:free"),
 
-  // Ollama
-  OLLAMA_URL: z.string().url().default("http://localhost:11434"),
-  OLLAMA_CHAT_MODEL: z.string().default("llama3"),
-  OLLAMA_EMBED_MODEL: z.string().default("nomic-embed-text"),
-
-  // Tuning Parameters
-  PERSONA_CHUNK_THRESHOLD: z.coerce.number().default(0.75),
-  MAX_SESSION_TURNS: z.coerce.number().default(20),
-  DISPATCH_JITTER_MAX_MS: z.coerce.number().default(15),
+  // Tuning
+  MAX_DAILY_MESSAGES: z.coerce.number().default(20),
+  MIN_MATCH_SCORE: z.coerce.number().default(3),
+  SUMMARIZE_MIN_TURNS: z.coerce.number().default(4),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
 
-// Validate immediately upon module load (fail fast at boot)
 let parsedConfig: Config;
 
 try {

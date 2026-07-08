@@ -8,9 +8,8 @@ type Ledger = Record<string, ConsentStatus>;
  * File-backed consent ledger. Single-process, last-write-wins.
  *
  * Survives restarts so users are not re-prompted after every deploy. Stores ONLY
- * the telegram id and the decision — never message content. When the HelixDB layer
- * lands, swap this for an adapter that writes `User.consentGranted`; nothing else
- * in the bot changes (it depends on the `ConsentStore` interface, not this class).
+ * the telegram id and the decision — never message content. The bot depends on the
+ * `ConsentStore` interface, not this class, so the backing store can change freely.
  */
 export class FileConsentStore implements ConsentStore {
   private readonly filePath: string;

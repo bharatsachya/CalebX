@@ -1,4 +1,5 @@
 import type { Bot } from "gramio";
+import type { IUserRepository } from "@calebx/core";
 import type { OnboardingRecord, OnboardingStore } from "./onboarding.store.ts";
 import {
   ageKeyboard,
@@ -14,12 +15,6 @@ import {
   ONBOARDING_PURPOSE_QUESTION,
   purposeKeyboard,
 } from "./messages.ts";
-
-type AddMemoryFn = (
-  userId: number,
-  message: string,
-  response: string,
-) => Promise<void>;
 
 const PURPOSE_LABELS: Record<string, string> = {
   [ONBOARDING_PURPOSE_MEET]: "meet people",
@@ -64,7 +59,7 @@ export async function resumeOnboarding(
 export function registerOnboardingHandlers(
   bot: Bot,
   store: OnboardingStore,
-  addMemory: AddMemoryFn,
+  userRepo: IUserRepository,
 ): void {
   // --- Message middleware ---
   bot.use(async (context, next) => {
@@ -78,6 +73,9 @@ export function registerOnboardingHandlers(
     const record = await store.get(telegramId);
 
     if (record.step === "complete") return next();
+
+    // Mid-onboarding non-text (photo/sticker) — consume without corrupting state.
+    if (text.trim() === "") return;
 
     if (record.step === "pending_name") {
       const name = text.trim() || "friend";
@@ -141,8 +139,13 @@ export function registerOnboardingHandlers(
       await store.set(telegramId, updated);
 
       const name = updated.name ?? "friend";
-      const summary = `My name is ${name}, I'm ${updated.age ?? "unknown age"} years old, based in ${updated.city ?? "unknown city"}. I joined CALEBX to: ${purposeLabel}.`;
-      await addMemory(telegramId, summary, "Got it — I'll keep that in mind.");
+
+      await userRepo.updateUserProfile(telegramId, {
+        name,
+        city: updated.city ?? "",
+        age: updated.age ?? "",
+        purpose: purposeLabel,
+      });
 
       await context.answer();
       await context.send(onboardingComplete(name, purposeLabel));

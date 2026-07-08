@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "tsx src/telegram.ts"
+    "start": "bun src/telegram.ts"
   },
   "dependencies": {
     "@calebx/core": "*",
     "@calebx/db": "*",
     "@calebx/agent": "*",
+    "@calebx/config": "*",
+    "@calebx/types": "*",
     "gramio": "^0.12.0",
     "dotenv": "^16.4.5"
   },

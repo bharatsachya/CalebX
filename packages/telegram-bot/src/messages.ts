@@ -31,6 +31,10 @@ export const FORGOTTEN_MESSAGE = `Done. I've erased what I'd learned and revoked
 
 export const NEEDS_CONSENT_NUDGE = `Before I can chat, I need your okay to learn from our conversation.`;
 
+export const DAILY_CAP_MESSAGE = `That's plenty for today — I've got a good feel for where your head's at. Let's pick this up tomorrow. In the meantime, I'll see who I can introduce you to. 👋`;
+
+export const PHOTO_SAVED = `Got your photo — I'll only ever share it once you and someone else both agree to connect.`;
+
 // --- Onboarding ---
 
 export const ONBOARDING_NAME_QUESTION = `What should I call you?`;

@@ -12,12 +12,21 @@ export class BaseCalebxError extends Error {
 // 1. Infrastructure Errors
 export class InfrastructureError extends BaseCalebxError {}
 
-export class HelixDBError extends InfrastructureError {
+export class Neo4jError extends InfrastructureError {
   constructor(
     message: string,
     public readonly details?: any,
   ) {
-    super(message, "ERR_HELIX_DB");
+    super(message, "ERR_NEO4J");
+  }
+}
+
+export class LLMError extends InfrastructureError {
+  constructor(
+    message: string,
+    public readonly details?: any,
+  ) {
+    super(message, "ERR_LLM");
   }
 }
 

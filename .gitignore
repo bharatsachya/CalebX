@@ -14,9 +14,8 @@ out/
 .DS_Store
 Thumbs.db
 
-# HelixDB workspace/state files
-.helix/
-helix.db
+# Runtime state (consent/onboarding/session ledgers — contains user data, never commit)
+.data/
 
 # Logs
 npm-debug.log*

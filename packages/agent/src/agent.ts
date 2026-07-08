@@ -1,60 +1,79 @@
-import { searchMemories, addMemory } from "./memory.ts";
-import { extractionCall, responseCall } from "./llm.ts";
-import { buildResponsePrompt, EXTRACTION_PROMPT } from "./system-prompt.ts";
+import type { SessionTurn, SummaryRecord } from "@calebx/types";
+import { responseCall, summarizeCall } from "./llm.ts";
+import {
+  buildResponsePrompt,
+  renderTurns,
+  SUMMARIZE_PROMPT,
+  type AgentProfile,
+} from "./system-prompt.ts";
 
-interface ExtractionResult {
-  intents: string[];
-  entities: string[];
-  sentiment: "positive" | "negative" | "neutral";
-  location_hint: string | null;
+/**
+ * Single-call conversational turn. Feeds the model the user's profile, past session
+ * summaries (long-term memory), and the recent in-session turns (short-term memory).
+ * One LLM call per message — extraction and mem0 removed to keep cost near zero.
+ */
+export async function runAgent(
+  profile: AgentProfile,
+  summaries: SummaryRecord[],
+  recentTurns: SessionTurn[],
+  message: string,
+): Promise<string> {
+  const reply = await responseCall(
+    buildResponsePrompt(profile, summaries),
+    renderTurns(recentTurns, message),
+  );
+  return reply || "I'm here — what's on your mind?";
 }
 
-function parseExtraction(raw: string): ExtractionResult {
+export interface SessionSummary {
+  summary: string;
+  interests: string[];
+}
+
+function stripFences(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/, "")
+    .trim();
+}
+
+function parseSummary(raw: string): SessionSummary | null {
   try {
-    const parsed = JSON.parse(raw.trim()) as unknown;
+    const parsed = JSON.parse(stripFences(raw)) as unknown;
     if (
       parsed !== null &&
       typeof parsed === "object" &&
-      "intents" in parsed &&
-      "entities" in parsed &&
-      "sentiment" in parsed &&
-      "location_hint" in parsed
+      "summary" in parsed &&
+      typeof (parsed as { summary: unknown }).summary === "string"
     ) {
-      return parsed as ExtractionResult;
+      const obj = parsed as { summary: string; interests?: unknown };
+      const interests = Array.isArray(obj.interests)
+        ? obj.interests.filter((i): i is string => typeof i === "string")
+        : [];
+      return { summary: obj.summary, interests };
     }
   } catch {
-    // Fall through to safe default
+    // fall through
   }
-  return {
-    intents: [],
-    entities: [],
-    sentiment: "neutral",
-    location_hint: null,
-  };
+  return null;
 }
 
 /**
- * Runs the two-stage agent pipeline for a single user turn.
- *
- * Stage 1 (temp 0.1): extract structured facts from the message.
- * Stage 2 (temp 0.7): generate a warm conversational reply using memories.
- *
- * Memory search happens before Stage 1 so context is available to both.
- * Memory storage happens after Stage 2 so the full turn is recorded.
+ * Distills a chat session into a persona summary + interest tags. One LLM call with a
+ * single retry on malformed JSON. Returns null if both attempts fail (caller skips storage).
  */
-export async function runAgent(
-  userId: number,
-  message: string,
-): Promise<string> {
-  const memories = await searchMemories(userId, message);
+export async function summarizeSession(
+  turns: SessionTurn[],
+): Promise<SessionSummary | null> {
+  const transcript = turns
+    .map((t) => `${t.role === "user" ? "Them" : "CALEBX"}: ${t.text}`)
+    .join("\n");
 
-  const rawExtraction = await extractionCall(EXTRACTION_PROMPT, message);
-  // Parsed and kept for Phase 2 persona ingestion — not yet acted upon.
-  const _extraction = parseExtraction(rawExtraction);
-
-  const reply = await responseCall(buildResponsePrompt(memories), message);
-
-  await addMemory(userId, message, reply);
-
-  return reply || "I'm here — what's on your mind?";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const raw = await summarizeCall(SUMMARIZE_PROMPT, transcript);
+    const parsed = parseSummary(raw);
+    if (parsed !== null) return parsed;
+  }
+  return null;
 }

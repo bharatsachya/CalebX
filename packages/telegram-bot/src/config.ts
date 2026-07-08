@@ -30,4 +30,7 @@ export const config = {
   onboardingStorePath:
     process.env.ONBOARDING_STORE_PATH ??
     path.resolve(__dirname, "../../../.data/onboarding.json"),
+  sessionStorePath:
+    process.env.SESSION_STORE_PATH ??
+    path.resolve(__dirname, "../../../.data/sessions.json"),
 } as const;

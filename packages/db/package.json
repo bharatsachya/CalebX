@@ -7,7 +7,9 @@
   },
   "dependencies": {
     "@calebx/core": "*",
-    "@helix-db/helix-db": "^2.0.5"
+    "@calebx/config": "*",
+    "@calebx/errors": "*",
+    "neo4j-driver": "^6.2.0"
   },
   "peerDependencies": {
     "typescript": "^5.4.5"

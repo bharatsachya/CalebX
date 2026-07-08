@@ -1,9 +1,13 @@
-export interface User {
-  id?: string;
-  telegramId: number;
-}
-
-export interface IUserRepository {
-  createUser(telegramId: number): Promise<User>;
-  getUserByTelegramId(telegramId: number): Promise<User | null>;
-}
+export type { User, UserProfile } from "./entities.ts";
+export type {
+  IUserRepository,
+  ISummaryStore,
+  IRecommendationStore,
+} from "./ports.ts";
+export {
+  scorePair,
+  sharedInterests,
+  pairKey,
+  pickRecommendations,
+  type PickOptions,
+} from "./matching.ts";
