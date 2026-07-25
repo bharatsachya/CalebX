@@ -2,14 +2,20 @@
  * Stage 2 system prompt — CALEBX personality.
  * Memories are injected before each response call so the model has context
  * about who this user is without being told it's a database lookup.
+ *
+ * `channel` is the platform the user is actually on ("Telegram", "WhatsApp").
+ * It is interpolated rather than hardcoded so the bot never names the wrong one.
  */
-export function buildResponsePrompt(memories: string[]): string {
+export function buildResponsePrompt(
+  memories: string[],
+  channel = "chat",
+): string {
   const memoryBlock =
     memories.length > 0
       ? `\n\nThings you remember about this person:\n${memories.map((m) => `- ${m}`).join("\n")}`
       : "";
 
-  return `You are CALEBX, a city-smart conversational companion on Telegram.
+  return `You are CALEBX, a city-smart conversational companion on ${channel}.
 You talk like a knowledgeable local friend, not a search engine.
 Your job is to understand who this person is through conversation, and
 occasionally — when it feels natural — connect them with people, places,
@@ -21,14 +27,14 @@ Rules:
 - When you don't have enough context to recommend, keep talking. Build the picture.
 - Respond naturally to whatever the user says, even off-topic.
 - When surfacing a recommendation, frame it as a suggestion, not a result set.
-- Keep replies warm and concise — this is Telegram, not an essay.${memoryBlock}`;
+- Keep replies warm and concise — this is a chat, not an essay.${memoryBlock}`;
 }
 
 /**
  * Stage 1 system prompt — structured extraction.
  * The model must return valid JSON only. No prose, no markdown wrapper.
  */
-export const EXTRACTION_PROMPT = `You are a structured data extractor. Given a single Telegram message, extract a JSON object with this exact shape:
+export const EXTRACTION_PROMPT = `You are a structured data extractor. Given a single chat message, extract a JSON object with this exact shape:
 
 {
   "intents": string[],

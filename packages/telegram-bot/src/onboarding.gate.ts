@@ -1,57 +1,62 @@
 import type { Bot } from "gramio";
-import type { OnboardingRecord, OnboardingStore } from "./onboarding.store.ts";
 import {
-  ageKeyboard,
-  ONBOARDING_AGE_OPTIONS,
-  ONBOARDING_AGE_QUESTION,
-  onboardingCityQuestion,
-  onboardingComplete,
-  ONBOARDING_NAME_QUESTION,
-  ONBOARDING_PURPOSE_ALL,
-  ONBOARDING_PURPOSE_COMMUNITIES,
-  ONBOARDING_PURPOSE_MEET,
-  ONBOARDING_PURPOSE_PLACES,
-  ONBOARDING_PURPOSE_QUESTION,
-  purposeKeyboard,
-} from "./messages.ts";
+  AGE_OPTIONS,
+  PURPOSE_OPTIONS,
+  advance,
+  promptForStep,
+  telegramUserId,
+  type OnboardingRecord,
+  type OnboardingStore,
+  type Prompt,
+} from "@calebx/channel";
+import { keyboardForGroup } from "./keyboards.ts";
+
+/** Anything that can send a message back — both message and callback contexts. */
+interface Sendable {
+  send(text: string, options?: object): Promise<unknown>;
+}
 
 type AddMemoryFn = (
-  userId: number,
+  userId: string,
   message: string,
   response: string,
 ) => Promise<void>;
 
-const PURPOSE_LABELS: Record<string, string> = {
-  [ONBOARDING_PURPOSE_MEET]: "meet people",
-  [ONBOARDING_PURPOSE_PLACES]: "discover places",
-  [ONBOARDING_PURPOSE_COMMUNITIES]: "find communities",
-  [ONBOARDING_PURPOSE_ALL]:
-    "meet people, discover places, and find communities",
-};
+/**
+ * Writes the onboarding memory without letting a failure swallow the user's
+ * reply. The step is already persisted by the time this runs, so a memory-store
+ * outage costs a memory, not the conversation.
+ */
+async function writeMemory(
+  addMemory: AddMemoryFn,
+  userId: string,
+  memory: { message: string; response: string },
+): Promise<void> {
+  try {
+    await addMemory(userId, memory.message, memory.response);
+  } catch (error) {
+    console.error("[telegram] onboarding memory write failed:", error);
+  }
+}
+
+/** Renders one FSM prompt as a Telegram message, with a keyboard if it's a choice. */
+async function sendPrompt(context: Sendable, prompt: Prompt): Promise<void> {
+  if (prompt.kind === "text") {
+    await context.send(prompt.text);
+    return;
+  }
+  await context.send(prompt.text, {
+    reply_markup: keyboardForGroup(prompt.group),
+  });
+}
 
 /** Re-sends the right question for the user's current onboarding step. */
 export async function resumeOnboarding(
-  context: { send: (text: string, opts?: object) => Promise<unknown> },
+  context: Sendable,
   record: OnboardingRecord,
 ): Promise<void> {
-  switch (record.step) {
-    case "pending_name":
-      await context.send(ONBOARDING_NAME_QUESTION);
-      break;
-    case "pending_city":
-      await context.send(onboardingCityQuestion(record.name ?? "there"));
-      break;
-    case "pending_age":
-      await context.send(ONBOARDING_AGE_QUESTION, {
-        reply_markup: ageKeyboard,
-      });
-      break;
-    case "pending_purpose":
-      await context.send(ONBOARDING_PURPOSE_QUESTION, {
-        reply_markup: purposeKeyboard,
-      });
-      break;
-  }
+  const prompt = promptForStep(record);
+  if (prompt) await sendPrompt(context, prompt);
 }
 
 /**
@@ -60,6 +65,9 @@ export async function resumeOnboarding(
  *
  * - Messages during onboarding are consumed here; they never reach runAgent.
  * - When step === "complete", calls next() so the message handler takes over.
+ *
+ * All step logic lives in the shared FSM in `@calebx/channel`; this file only
+ * translates between GramIO and that FSM.
  */
 export function registerOnboardingHandlers(
   bot: Bot,
@@ -75,77 +83,43 @@ export function registerOnboardingHandlers(
     const telegramId = context.from?.id;
     if (telegramId === undefined) return next();
 
-    const record = await store.get(telegramId);
+    const userId = telegramUserId(telegramId);
+    const record = await store.get(userId);
+    const result = advance(record, { kind: "text", value: text });
 
-    if (record.step === "complete") return next();
+    // Onboarding finished → the conversation handler owns this message.
+    if (result.outcome === "pass_through") return next();
 
-    if (record.step === "pending_name") {
-      const name = text.trim() || "friend";
-      const updated = { ...record, name, step: "pending_city" as const };
-      await store.set(telegramId, updated);
-      return context.send(onboardingCityQuestion(name));
-    }
+    // Free text at a keyboard-only step. Consumed silently, without a reply and
+    // without reaching the agent — long-standing behaviour, preserved.
+    if (result.outcome === "ignored") return;
 
-    if (record.step === "pending_city") {
-      const city = text.trim() || "your city";
-      const updated = { ...record, city, step: "pending_age" as const };
-      await store.set(telegramId, updated);
-      return context.send(ONBOARDING_AGE_QUESTION, {
-        reply_markup: ageKeyboard,
-      });
-    }
-
-    // pending_age / pending_purpose — waiting for keyboard tap; ignore free text
+    await store.set(userId, result.record);
+    if (result.memory) await writeMemory(addMemory, userId, result.memory);
+    for (const prompt of result.prompts) await sendPrompt(context, prompt);
   });
 
-  // --- Age keyboard callbacks ---
-  for (const age of ONBOARDING_AGE_OPTIONS) {
-    bot.callbackQuery(`onboarding:age:${age}`, async (context) => {
+  // --- Keyboard callbacks, one per shared option ---
+  for (const option of [...AGE_OPTIONS, ...PURPOSE_OPTIONS]) {
+    bot.callbackQuery(option.id, async (context) => {
       const telegramId = context.from?.id;
       if (telegramId === undefined) return context.answer();
 
-      const record = await store.get(telegramId);
-      if (record.step !== "pending_age") return context.answer();
+      const userId = telegramUserId(telegramId);
+      const record = await store.get(userId);
+      const result = advance(record, { kind: "choice", id: option.id });
 
-      const updated = { ...record, age, step: "pending_purpose" as const };
-      await store.set(telegramId, updated);
+      // A tap that doesn't apply here — a stale keyboard from an earlier step,
+      // or one tapped after onboarding completed. Acknowledge it so the client
+      // stops spinning, and change nothing.
+      if (result.outcome !== "advanced") return context.answer();
+
+      await store.set(userId, result.record);
+      if (result.memory) {
+        await addMemory(userId, result.memory.message, result.memory.response);
+      }
       await context.answer();
-      await context.send(ONBOARDING_PURPOSE_QUESTION, {
-        reply_markup: purposeKeyboard,
-      });
-    });
-  }
-
-  // --- Purpose keyboard callbacks ---
-  const purposeCallbacks = [
-    ONBOARDING_PURPOSE_MEET,
-    ONBOARDING_PURPOSE_PLACES,
-    ONBOARDING_PURPOSE_COMMUNITIES,
-    ONBOARDING_PURPOSE_ALL,
-  ] as const;
-
-  for (const callbackId of purposeCallbacks) {
-    bot.callbackQuery(callbackId, async (context) => {
-      const telegramId = context.from?.id;
-      if (telegramId === undefined) return context.answer();
-
-      const record = await store.get(telegramId);
-      if (record.step !== "pending_purpose") return context.answer();
-
-      const purposeLabel = PURPOSE_LABELS[callbackId] ?? "explore";
-      const updated = {
-        ...record,
-        purpose: purposeLabel,
-        step: "complete" as const,
-      };
-      await store.set(telegramId, updated);
-
-      const name = updated.name ?? "friend";
-      const summary = `My name is ${name}, I'm ${updated.age ?? "unknown age"} years old, based in ${updated.city ?? "unknown city"}. I joined CALEBX to: ${purposeLabel}.`;
-      await addMemory(telegramId, summary, "Got it — I'll keep that in mind.");
-
-      await context.answer();
-      await context.send(onboardingComplete(name, purposeLabel));
+      for (const prompt of result.prompts) await sendPrompt(context, prompt);
     });
   }
 }

@@ -12,15 +12,16 @@ const mem0 = new MemoryClient({ apiKey: agentConfig.mem0ApiKey });
  * Returns memories for this user relevant to the current message,
  * most relevant first. Returns an empty array if mem0 has nothing yet.
  *
- * userId is converted to string — mem0's user_id param is a string,
- * but Telegram IDs from GramIO are numbers.
+ * userId is a namespaced id from `@calebx/channel` ("tg:123", "wa:4477...").
+ * The namespace is what keeps a WhatsApp phone number from colliding with a
+ * Telegram id here — mem0 has a single flat user_id space.
  */
 export async function searchMemories(
-  userId: number,
+  userId: string,
   query: string,
 ): Promise<string[]> {
   const results = await mem0.search(query, {
-    user_id: String(userId),
+    user_id: userId,
     limit: 10,
   });
   return (results as Mem0SearchResult[])
@@ -33,7 +34,7 @@ export async function searchMemories(
  * mem0 handles deduplication and contradiction resolution automatically.
  */
 export async function addMemory(
-  userId: number,
+  userId: string,
   message: string,
   response: string,
 ): Promise<void> {
@@ -42,6 +43,6 @@ export async function addMemory(
       { role: "user", content: message },
       { role: "assistant", content: response },
     ],
-    { user_id: String(userId) },
+    { user_id: userId },
   );
 }

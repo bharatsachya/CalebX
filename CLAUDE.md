@@ -592,6 +592,20 @@ When generating code for this project:
 10. **When in doubt about HelixDB schema, run `helix compile` before assuming it works.**
     The TypeScript SDK catches type mismatches at query bundle generation time, not runtime.
 
+11. **Anything a user reads or answers belongs in `packages/channel`, not in a bot.**
+    Copy, option ids, persisted option values, the onboarding FSM. A bot package may only
+    hold transport and rendering. If you are about to write a user-facing string inside
+    `telegram-bot/` or `whatsapp-bot/`, you are creating drift between the channels.
+
+12. **User ids are namespaced (`tg:123`, `wa:16505551234`), never raw platform ids.**
+    Build them with `telegramUserId()` / `whatsappUserId()`. mem0 has a single flat
+    `user_id` space — a bare WhatsApp number can collide with a Telegram id and merge two
+    people's personas. This is also the groundwork for federated identity (§13).
+
+13. **A failed turn still owes the user a reply.** Memory writes are best-effort and must
+    not swallow a user-visible message; a thrown `runAgent` falls back to
+    `copy.AGENT_UNAVAILABLE`. Silence is indistinguishable from a dead bot.
+
 ---
 
 ## 12. Key Risks & Mitigations
@@ -609,7 +623,9 @@ When generating code for this project:
 
 ## 13. Future Work (Post-MVP)
 
-- **WhatsApp adapter** via Baileys or Cloud API — same queue architecture, new boundary package
+- ~~**WhatsApp adapter**~~ — shipped, on the official Meta Cloud API (`packages/whatsapp-bot`).
+  Baileys was rejected: it drives a real user account, which is the WhatsApp equivalent of the
+  MTProto userbots §6.3 bans for Telegram.
 - **Discord adapter** — identical pattern, different `packages/discord-bot/`
 - **mem0 integration** — sits between workers and HelixDB; handles contradiction resolution,
   deduplication, and decay scoring automatically. Removes custom decay logic from Phase 3.

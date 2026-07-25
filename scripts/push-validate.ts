@@ -52,6 +52,15 @@ async function main(): Promise<void> {
   results.push(
     runStep("format check (full repo)", "bun", ["run", "format:check"]),
   );
+  // Guards the byte-identical copy/option/summary contract that the Telegram
+  // and WhatsApp bots share via @calebx/channel. Existing on-disk records and
+  // stored memories contain those exact strings.
+  results.push(
+    runStep("channel parity", "bun", [
+      "run",
+      "scripts/verify-channel-parity.ts",
+    ]),
+  );
   results.push(runOptional("tests", "no test runner configured yet"));
   summary(results);
   const failed = results.filter((r) => r.status === "fail");

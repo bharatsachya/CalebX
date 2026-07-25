@@ -1,18 +1,17 @@
 {
-  "name": "@calebx/telegram-bot",
+  "name": "@calebx/whatsapp-bot",
   "version": "1.0.0",
-  "main": "src/telegram.ts",
+  "main": "src/whatsapp.ts",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "tsx src/telegram.ts"
+    "start": "tsx src/whatsapp.ts"
   },
   "dependencies": {
-    "@calebx/core": "*",
-    "@calebx/db": "*",
     "@calebx/agent": "*",
     "@calebx/channel": "*",
-    "gramio": "^0.12.0",
+    "@calebx/core": "*",
+    "@calebx/db": "*",
     "dotenv": "^16.4.5"
   },
   "peerDependencies": {

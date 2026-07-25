@@ -10,6 +10,9 @@ out/
 .env.local
 .env.*.local
 
+# Local state ledgers (consent + onboarding records contain user PII)
+.data/
+
 # OS files
 .DS_Store
 Thumbs.db

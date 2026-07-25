@@ -41,10 +41,15 @@ function parseExtraction(raw: string): ExtractionResult {
  *
  * Memory search happens before Stage 1 so context is available to both.
  * Memory storage happens after Stage 2 so the full turn is recorded.
+ *
+ * `userId` is a namespaced id ("tg:123", "wa:4477..."). `channel` is the
+ * human-readable platform name woven into the system prompt, so the bot does
+ * not tell a WhatsApp user it is on Telegram.
  */
 export async function runAgent(
-  userId: number,
+  userId: string,
   message: string,
+  channel = "chat",
 ): Promise<string> {
   const memories = await searchMemories(userId, message);
 
@@ -52,7 +57,10 @@ export async function runAgent(
   // Parsed and kept for Phase 2 persona ingestion — not yet acted upon.
   const _extraction = parseExtraction(rawExtraction);
 
-  const reply = await responseCall(buildResponsePrompt(memories), message);
+  const reply = await responseCall(
+    buildResponsePrompt(memories, channel),
+    message,
+  );
 
   await addMemory(userId, message, reply);
 
