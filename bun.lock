@@ -69,6 +69,20 @@
         "pino-pretty": "^11.0.0",
       },
     },
+    "packages/matchmaking": {
+      "name": "@calebx/matchmaking",
+      "version": "1.0.0",
+      "dependencies": {
+        "dotenv": "^16.4.5",
+        "pg": "^8.11.3",
+      },
+      "devDependencies": {
+        "@types/pg": "^8.11.0",
+      },
+      "peerDependencies": {
+        "typescript": "^5.4.5",
+      },
+    },
     "packages/telegram-bot": {
       "name": "@calebx/telegram-bot",
       "version": "1.0.0",
@@ -151,6 +165,8 @@
     "@calebx/errors": ["@calebx/errors@workspace:packages/errors"],
 
     "@calebx/logger": ["@calebx/logger@workspace:packages/logger"],
+
+    "@calebx/matchmaking": ["@calebx/matchmaking@workspace:packages/matchmaking"],
 
     "@calebx/telegram-bot": ["@calebx/telegram-bot@workspace:packages/telegram-bot"],
 
