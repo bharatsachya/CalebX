@@ -1,35 +1,13 @@
-import { copy, type ChoiceOption, type Prompt } from "@calebx/channel";
-
-/**
- * Renders a channel-agnostic `Prompt` as a Cloud API message payload.
- *
- * WhatsApp caps interactive reply buttons at 3, and both onboarding choice
- * steps offer 4 options — so anything over 3 becomes an interactive list. The
- * list costs the user an extra tap (button opens a sheet, then a row), which is
- * why every choice prompt also spells the options out as a numbered list in the
- * body: typing "2" always works, whatever the client renders.
- */
+/** A tappable option — the id round-trips through Meta's interactive reply. */
+export interface ChoiceOption {
+  id: string;
+  label: string;
+}
 
 /** Cloud API field caps. Exceeding any of them is a 400 from Graph. */
 const ROW_TITLE_MAX = 24;
 const BUTTON_TITLE_MAX = 20;
 const LIST_BUTTON_MAX = 20;
-
-export function renderPrompt(
-  to: string,
-  prompt: Prompt,
-  nudge?: string,
-): object {
-  const body = nudge ? `${nudge}\n\n${prompt.text}` : prompt.text;
-
-  if (prompt.kind === "text") return textPayload(to, body);
-
-  const numbered = `${body}\n\n${copy.numberedOptions(prompt.options.map((option) => option.label))}`;
-
-  return prompt.options.length <= 3
-    ? buttonsPayload(to, numbered, prompt.options)
-    : listPayload(to, numbered, prompt.options);
-}
 
 export function textPayload(to: string, body: string): object {
   return {
@@ -42,6 +20,7 @@ export function textPayload(to: string, body: string): object {
   };
 }
 
+/** WhatsApp caps reply buttons at 3 — callers with more options need listPayload. */
 export function buttonsPayload(
   to: string,
   body: string,

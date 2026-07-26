@@ -23,6 +23,8 @@ export interface Candidate {
   owner_type: OwnerType;
   language: string | null;
   last_active_at: string | null;
+  consent_granted: boolean;
+  consent_at: string | null;
 
   full_name: string | null;
   gender: string | null;

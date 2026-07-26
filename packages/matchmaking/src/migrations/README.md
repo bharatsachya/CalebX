@@ -13,3 +13,4 @@ numbered file instead, the same rule as any other production migration tool.
 | `005_partner_prefs.sql`        | `partner_prefs`               |
 | `006_matches.sql`              | `matches`                     |
 | `007_photos.sql`               | `photos`                      |
+| `008_candidate_consent.sql`    | `candidates` (consent cols)   |
