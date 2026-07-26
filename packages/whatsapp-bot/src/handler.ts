@@ -1,4 +1,4 @@
-import { candidates, type Candidate } from "@calebx/matchmaking";
+import { candidates, messages, type Candidate } from "@calebx/matchmaking";
 import type { WhatsAppClient } from "./client.ts";
 import * as copy from "./copy.ts";
 import {
@@ -86,8 +86,26 @@ export async function handleMessage(
     return;
   }
 
+  // Only messages the candidate sends once consented become part of the raw
+  // log the matchmaker reads — the consent exchange itself is tracked as a
+  // column on candidates, not logged as a "message".
+  await messages.logMessage(
+    candidate.id,
+    message.messageId,
+    "inbound",
+    messageBody(message),
+  );
+
   // Consent already granted — the signup flow (a later PR) takes over from
   // here, including handling START. For now, acknowledge so the sender isn't
   // staring at silence.
   await client.sendText(message.waId, copy.SIGNUP_COMING_SOON);
+}
+
+function messageBody(message: InboundMessage): string | null {
+  if (message.content.kind === "text") return message.content.text;
+  if (message.content.kind === "choice") {
+    return `[choice] ${message.content.title} (${message.content.id})`;
+  }
+  return null;
 }

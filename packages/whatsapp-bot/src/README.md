@@ -25,7 +25,7 @@ HTTP server is `node:http` and the Graph client is global `fetch`.
 - `consent.gate.ts` — privacy notice, accept/decline by button or typed reply;
   reads/writes `candidates.consent_granted` via `@calebx/matchmaking`
 - `handler.ts` — routing: unsupported → forget → find-or-create candidate →
-  consent gate → (signup flow lands in a later PR)
+  consent gate → log message → (signup flow lands in a later PR)
 - `whatsapp.ts` — entry point; builds dependencies and listens
 
 This package used to be CALEBX's own WhatsApp channel (shared onboarding FSM
