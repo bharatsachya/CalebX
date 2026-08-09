@@ -1,6 +1,3 @@
-import { runAgent, addMemory } from "@calebx/agent";
-import { FileConsentStore, FileOnboardingStore } from "@calebx/channel";
-import { HelixUserRepository } from "@calebx/db";
 import { WhatsAppClient } from "./client.ts";
 import { config } from "./config.ts";
 import { MessageDedupe } from "./dedupe.ts";
@@ -9,9 +6,6 @@ import { UserQueue } from "./queue.ts";
 import { createWebhookServer } from "./server.ts";
 
 const client = new WhatsAppClient(config);
-const consent = new FileConsentStore(config.consentStorePath);
-const onboarding = new FileOnboardingStore(config.onboardingStorePath);
-const users = new HelixUserRepository();
 
 const dedupe = new MessageDedupe();
 const queue = new UserQueue();
@@ -20,21 +14,13 @@ const server = createWebhookServer({
   config,
   dedupe,
   queue,
-  onMessage: (message) =>
-    handleMessage(message, {
-      client,
-      consent,
-      onboarding,
-      users,
-      runAgent,
-      addMemory,
-    }),
+  onMessage: (message) => handleMessage(message, { client }),
 });
 
 server.listen(config.port, () => {
   const mode = config.dryRun ? " [DRY RUN — sends are logged, not sent]" : "";
   console.log(
-    `✨ CALEBX WhatsApp webhook listening on :${config.port}${config.webhookPath}${mode}`,
+    `✨ CALEBX Matchmaking WhatsApp webhook listening on :${config.port}${config.webhookPath}${mode}`,
   );
 });
 

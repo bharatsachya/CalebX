@@ -66,13 +66,6 @@ export const config = {
   maxMessageAgeSeconds: optionalNumber("WHATSAPP_MAX_MESSAGE_AGE_SECONDS", 300),
 
   dryRun,
-
-  consentStorePath:
-    process.env.CONSENT_STORE_PATH ??
-    path.resolve(__dirname, "../../../.data/consent.json"),
-  onboardingStorePath:
-    process.env.ONBOARDING_STORE_PATH ??
-    path.resolve(__dirname, "../../../.data/onboarding.json"),
 } as const;
 
 export type WhatsAppConfig = typeof config;

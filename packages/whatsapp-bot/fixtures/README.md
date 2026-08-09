@@ -8,7 +8,7 @@ signs it with `WHATSAPP_APP_SECRET` exactly as Meta would.
 | ------------------- | ----------------------------- | ------------------------------------------ |
 | `text.json`         | plain text message            | routed to the handler, one reply           |
 | `button_reply.json` | interactive reply button tap  | consent accept                             |
-| `list_reply.json`   | interactive list row tap      | advances an onboarding choice step         |
+| `list_reply.json`   | interactive list row tap      | parsed as a choice (no signup flow yet)    |
 | `status.json`       | delivery receipt              | **ignored** — no reply, no agent call      |
 | `image.json`        | image message                 | "text only" reply, never reaches the agent |
 | `stale.json`        | text, timestamp two hours old | dropped by the staleness filter            |

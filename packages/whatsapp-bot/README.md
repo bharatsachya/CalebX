@@ -1,11 +1,16 @@
 # @calebx/whatsapp-bot
 
-WhatsApp delivery adapter for CALEBX, on the **official Meta Cloud API**.
+WhatsApp delivery adapter for the **matchmaking product**, on the official
+Meta Cloud API. This is a separate product from CALEBX sharing this
+monorepo. CALEBX's own WhatsApp presence used to live in this package; it has
+been repurposed, and CALEBX continues on Telegram only
+(`packages/telegram-bot`).
 
 A thin boundary: it receives webhooks, verifies them, and translates between
-WhatsApp's wire format and the shared logic in `@calebx/channel`. All consent
-and onboarding behaviour lives there, so this bot and `@calebx/telegram-bot`
-cannot drift.
+WhatsApp's wire format and `@calebx/db`'s Postgres-backed matchmaking domain.
+Consent and (eventually) the biodata signup flow live in this package's own
+`copy.ts`/`consent.gate.ts` — there's no sibling channel to keep in parity
+with, so unlike CALEBX there is no shared `@calebx/channel` dependency here.
 
 ## Running it
 

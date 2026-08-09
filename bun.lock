@@ -48,8 +48,11 @@
       "name": "@calebx/db",
       "version": "1.0.0",
       "dependencies": {
-        "@calebx/core": "*",
-        "@helix-db/helix-db": "^2.0.5",
+        "dotenv": "^16.4.5",
+        "pg": "^8.11.3",
+      },
+      "devDependencies": {
+        "@types/pg": "^8.11.0",
       },
       "peerDependencies": {
         "typescript": "^5.4.5",
@@ -76,7 +79,6 @@
         "@calebx/agent": "*",
         "@calebx/channel": "*",
         "@calebx/core": "*",
-        "@calebx/db": "*",
         "dotenv": "^16.4.5",
         "gramio": "^0.12.0",
       },
@@ -92,9 +94,6 @@
       "name": "@calebx/whatsapp-bot",
       "version": "1.0.0",
       "dependencies": {
-        "@calebx/agent": "*",
-        "@calebx/channel": "*",
-        "@calebx/core": "*",
         "@calebx/db": "*",
         "dotenv": "^16.4.5",
       },
@@ -231,8 +230,6 @@
     "@gramio/keyboards": ["@gramio/keyboards@1.4.0", "", { "dependencies": { "@gramio/types": ">=9.6.0" } }, "sha512-sUjXV/LQmXIXRd2H0dwVXObeM+3OeUuxR/rt1hi2CUoyg5aaFy8wUfMjVMhx/9IXqHCQ7FK72zS9sqVXkvYCeg=="],
 
     "@gramio/types": ["@gramio/types@10.1.0", "", {}, "sha512-vced/i5k2wbkkcOZvD3LJgv7EjPK6oJOL12u0Piag+JDDSXJt/fejPPXXG+st0vYoIQR5bd4ndrWi4Cn5PshFQ=="],
-
-    "@helix-db/helix-db": ["@helix-db/helix-db@2.0.5", "", {}, "sha512-fJKhqtS09ANA05vEtyZuj8M46ZUbhlyIhYHSe82E6JoIKs6XWPmEuJjAzpbQjGdQbdE9BtcQfqJSmr20X/TViw=="],
 
     "@jest/expect-utils": ["@jest/expect-utils@29.7.0", "", { "dependencies": { "jest-get-type": "^29.6.3" } }, "sha512-GlsNBWiFQFCVi9QVSx7f5AgMeLxe9YCCs5PuP2O2LdjDAA8Jh9eX7lA1Jq/xdXw3Wb3hyvlFNfZIfcRetSzYcA=="],
 
