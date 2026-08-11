@@ -1,5 +1,6 @@
+import type { Prompt } from "@calebx/channel";
 import type { WhatsAppConfig } from "./config.ts";
-import { textPayload } from "./render.ts";
+import { renderPrompt, textPayload } from "./render.ts";
 
 /** Cloud API text body cap is 4096; chunk below it with room for a boundary. */
 const TEXT_CHUNK_LIMIT = 4000;
@@ -29,7 +30,12 @@ export class WhatsAppClient {
     }
   }
 
-  /** Sends an already-built payload, for flows that render their own (consent, signup). */
+  /** Sends a prompt from the shared onboarding FSM. */
+  async sendPrompt(to: string, prompt: Prompt, nudge?: string): Promise<void> {
+    await this.post(renderPrompt(to, prompt, nudge));
+  }
+
+  /** Sends an already-built payload, for flows that render their own (consent). */
   async sendRaw(payload: object): Promise<void> {
     await this.post(payload);
   }

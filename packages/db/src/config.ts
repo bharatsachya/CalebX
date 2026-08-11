@@ -1,26 +1,25 @@
 import dotenv from "dotenv";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Load standard .env if present.
+dotenv.config();
 
-// .env lives at the monorepo root (two levels up from packages/db/src).
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
-
-function required(name: string): string {
-  const value = process.env[name];
-  if (!value || value.trim() === "" || value === `YOUR_${name}_HERE`) {
-    console.error(
-      `[db] Missing required environment variable: ${name}.\n` +
-        `Copy .env.example to .env and fill it in.`,
-    );
-    process.exit(1);
-  }
-  return value;
+export interface DbConfig {
+  databaseUrl: string;
 }
 
-export const config = {
-  databaseUrl: required("DATABASE_URL"),
-} as const;
+let cachedConfig: DbConfig | null = null;
 
-export type DbConfig = typeof config;
+export function getDbConfig(): DbConfig {
+  if (cachedConfig) return cachedConfig;
+
+  const value = process.env.DATABASE_URL;
+  if (!value || value.trim() === "" || value === "YOUR_DATABASE_URL_HERE") {
+    throw new Error(
+      "[db] Missing required environment variable: DATABASE_URL.\n" +
+        "Set DATABASE_URL in your environment or .env file.",
+    );
+  }
+
+  cachedConfig = { databaseUrl: value.trim() };
+  return cachedConfig;
+}

@@ -1,5 +1,5 @@
 import { Pool, type QueryResultRow } from "pg";
-import { config } from "./config.ts";
+import { getDbConfig } from "./config.ts";
 
 /**
  * One pool for the whole process. Postgres is the only datastore this
@@ -9,6 +9,7 @@ let pool: Pool | null = null;
 
 export function getPool(): Pool {
   if (!pool) {
+    const config = getDbConfig();
     pool = new Pool({ connectionString: config.databaseUrl });
   }
   return pool;

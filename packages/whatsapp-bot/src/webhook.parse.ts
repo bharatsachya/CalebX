@@ -1,3 +1,4 @@
+import { whatsappUserId } from "@calebx/channel";
 import type {
   InboundContent,
   InboundMessage,
@@ -57,6 +58,7 @@ function toInboundMessage(
 
   return {
     waId,
+    userId: whatsappUserId(waId),
     messageId,
     // Meta sends unix SECONDS as a string. A missing/garbled value falls back to
     // "now" so a malformed timestamp cannot make a live message look stale.

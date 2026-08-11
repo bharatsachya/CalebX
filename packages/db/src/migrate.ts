@@ -24,7 +24,7 @@ async function migrate(): Promise<void> {
   const applied = new Set(
     (
       await pool.query<{ name: string }>("SELECT name FROM schema_migrations")
-    ).rows.map((row) => row.name),
+    ).rows.map((row: { name: string }) => row.name),
   );
 
   const files = readdirSync(MIGRATIONS_DIR)

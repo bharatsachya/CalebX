@@ -24,8 +24,8 @@
                 "interactive": {
                   "type": "list_reply",
                   "list_reply": {
-                    "id": "demo:list-option",
-                    "title": "Demo option"
+                    "id": "onboarding:age:25-34",
+                    "title": "25–34"
                   }
                 }
               }

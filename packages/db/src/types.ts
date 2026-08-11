@@ -16,10 +16,13 @@ export type MatchStage =
   | "progressing"
   | "closed";
 export type PhotoVisibility = "hidden" | "on_mutual_interest" | "public";
+export type MaritalStatus = "never_married" | "single" | "divorced" | "widowed";
 
 export interface Candidate {
   id: string;
-  wa_phone: string;
+  wa_phone: string | null;
+  telegram_id: number | string | null;
+  user_id_hash: string | null;
   owner_type: OwnerType;
   language: string | null;
   last_active_at: string | null;
@@ -32,8 +35,8 @@ export interface Candidate {
   birth_place: string | null;
   city: string | null;
   complexion: string | null;
-  height_cm: number | null;
-  marital_status: string | null;
+  height: number | null;
+  marital_status: MaritalStatus | null;
   community: string | null;
   highest_education: string | null;
   occupation: string | null;
@@ -67,7 +70,7 @@ export interface ContactDetails {
 export interface Message {
   id: string;
   candidate_id: string;
-  wa_message_id: string;
+  message_id: string;
   direction: MessageDirection;
   body: string | null;
   created_at: string;

@@ -4,7 +4,9 @@ CREATE TABLE candidates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- Login / account
-  wa_phone text NOT NULL UNIQUE,
+  wa_phone text UNIQUE,
+  telegram_id bigint UNIQUE,
+  user_id_hash text UNIQUE,
   owner_type owner_type NOT NULL DEFAULT 'self',
   language text,
   last_active_at timestamptz,
@@ -16,8 +18,8 @@ CREATE TABLE candidates (
   birth_place text,
   city text,
   complexion text,
-  height_cm integer,
-  marital_status text,
+  height integer,
+  marital_status marital_status CONSTRAINT candidate_not_married CHECK (marital_status IS NULL OR marital_status::text != 'married'),
   community text,
   highest_education text,
   occupation text,

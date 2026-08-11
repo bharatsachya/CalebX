@@ -1,35 +1,63 @@
-import { candidates, messages, type Candidate } from "@calebx/db";
+import {
+  CHANNEL_LABELS,
+  copy,
+  type ConsentStore,
+  type OnboardingStore,
+} from "@calebx/channel";
+import type { IUserRepository } from "@calebx/core";
 import type { WhatsAppClient } from "./client.ts";
-import * as copy from "./copy.ts";
 import {
   handleConsentChoice,
   isConsentChoice,
   matchConsentText,
   sendPrivacyNotice,
-} from "./consent.gate.ts";
+} from "./consent.flow.ts";
 import { matchKeyword } from "./keywords.ts";
+import { runOnboardingStep, sendCurrentQuestion } from "./onboarding.flow.ts";
 import type { InboundMessage } from "./webhook.types.ts";
+
+const HINTS = copy.WHATSAPP_HINTS;
+
+type RunAgentFn = (
+  userId: string,
+  message: string,
+  channel?: string,
+) => Promise<string>;
+
+type AddMemoryFn = (
+  userId: string,
+  message: string,
+  response: string,
+) => Promise<void>;
 
 export interface HandlerDeps {
   client: WhatsAppClient;
+  consent: ConsentStore;
+  onboarding: OnboardingStore;
+  users: IUserRepository;
+  runAgent: RunAgentFn;
+  addMemory: AddMemoryFn;
 }
 
 /**
  * Routes one inbound message. Runs inside the per-user serial queue, so it may
  * take as long as it needs — the webhook has already been acknowledged.
  *
- * Nothing past the consent gate runs before consent is granted, with only the
- * two consent buttons exempted. Biodata is far more sensitive than the chat
- * text a normal message carries, so this gate is checked on every turn, not
- * just the first.
+ * Order is the point of this function: nothing reaches the agent, and nothing
+ * is written to memory, before consent has been granted.
+ *
+ * Note this gate is stricter than Telegram's, deliberately. There, non-message
+ * updates skip the consent check entirely, so a stale keyboard can drive
+ * onboarding without consent. Here interactive replies go through the same
+ * check as text, with only the two consent buttons exempted.
  */
 export async function handleMessage(
   message: InboundMessage,
   deps: HandlerDeps,
 ): Promise<void> {
-  const { client } = deps;
+  const { client, consent, onboarding, runAgent } = deps;
 
-  // We only ingest text and button/list replies.
+  // We only ingest text. Media never reaches the agent or memory.
   if (message.content.kind === "unsupported") {
     await client.sendText(message.waId, copy.UNSUPPORTED_MESSAGE);
     return;
@@ -38,24 +66,25 @@ export async function handleMessage(
   // Fire-and-forget: a read receipt round trip must not delay the reply.
   void client.markReadAndTyping(message.messageId).catch(() => undefined);
 
-  const candidate = await candidates.findOrCreateByPhone(message.waId);
-
   const keyword =
     message.content.kind === "text" ? matchKeyword(message.content.text) : null;
 
   // FORGET is honoured at any time, consented or not.
   if (keyword === "forget") {
-    await candidates.setConsent(candidate.id, false);
-    await client.sendText(message.waId, copy.FORGOTTEN_MESSAGE);
+    await consent.delete(message.userId);
+    await onboarding.delete(message.userId);
+    await client.sendText(message.waId, copy.forgottenMessage(HINTS));
     return;
   }
 
   const consentDeps = {
     client,
-    onGranted: async (_candidate: Candidate, waId: string) => {
-      // The biodata signup flow lands in a later PR; this placeholder keeps
-      // the consent gate independently testable until then.
-      await client.sendText(waId, copy.SIGNUP_COMING_SOON);
+    consent,
+    users: deps.users,
+    onGranted: async (granted: InboundMessage) => {
+      const fresh = { step: "pending_name" as const };
+      await onboarding.set(granted.userId, fresh);
+      await sendCurrentQuestion(client, granted.waId, fresh);
     },
   };
 
@@ -64,48 +93,56 @@ export async function handleMessage(
     message.content.kind === "choice" &&
     isConsentChoice(message.content.id)
   ) {
-    return handleConsentChoice(
-      candidate,
-      message.waId,
-      message.content.id,
-      consentDeps,
-    );
+    return handleConsentChoice(message, message.content.id, consentDeps);
   }
 
-  if (!candidate.consent_granted) {
+  if ((await consent.get(message.userId)) !== "granted") {
     const typed =
       message.content.kind === "text"
         ? matchConsentText(message.content.text)
         : null;
-    if (typed) {
-      return handleConsentChoice(candidate, message.waId, typed, consentDeps);
-    }
+    if (typed) return handleConsentChoice(message, typed, consentDeps);
 
-    // Everything else is re-prompted and dropped — never persisted as biodata.
+    // Everything else is re-prompted and dropped — never ingested.
     await sendPrivacyNotice(client, message.waId, copy.NEEDS_CONSENT_NUDGE);
     return;
   }
 
-  // Only messages the candidate sends once consented become part of the raw
-  // log the matchmaker reads — the consent exchange itself is tracked as a
-  // column on candidates, not logged as a "message".
-  await messages.logMessage(
-    candidate.id,
-    message.messageId,
-    "inbound",
-    messageBody(message),
-  );
+  const record = await onboarding.get(message.userId);
 
-  // Consent already granted — the signup flow (a later PR) takes over from
-  // here, including handling START. For now, acknowledge so the sender isn't
-  // staring at silence.
-  await client.sendText(message.waId, copy.SIGNUP_COMING_SOON);
-}
-
-function messageBody(message: InboundMessage): string | null {
-  if (message.content.kind === "text") return message.content.text;
-  if (message.content.kind === "choice") {
-    return `[choice] ${message.content.title} (${message.content.id})`;
+  // START equivalent: resume where they left off, or welcome them back.
+  if (keyword === "start") {
+    if (record.step === "complete") {
+      await client.sendText(message.waId, copy.WELCOME_BACK);
+    } else {
+      await sendCurrentQuestion(client, message.waId, record);
+    }
+    return;
   }
-  return null;
+
+  const outcome = await runOnboardingStep(message, record, {
+    client,
+    onboarding,
+    addMemory: deps.addMemory,
+  });
+  if (outcome === "handled") return;
+
+  // Onboarding complete — this is a real conversation turn.
+  if (message.content.kind !== "text" || message.content.text.trim() === "") {
+    return;
+  }
+  // A failed turn must still produce a visible reply — silence reads as a dead
+  // bot, and the user has no way to tell whether their message even arrived.
+  let reply: string;
+  try {
+    reply = await runAgent(
+      message.userId,
+      message.content.text,
+      CHANNEL_LABELS.wa,
+    );
+  } catch (error) {
+    console.error("[whatsapp] agent turn failed:", error);
+    reply = copy.AGENT_UNAVAILABLE;
+  }
+  await client.sendText(message.waId, reply);
 }

@@ -136,8 +136,6 @@ async function handleDelivery(
       continue;
     }
 
-    // Keyed by waId — this bot has one channel, so the phone number is the
-    // identity key throughout (see webhook.types.ts).
-    queue.run(message.waId, () => onMessage(message));
+    queue.run(message.userId, () => onMessage(message));
   }
 }

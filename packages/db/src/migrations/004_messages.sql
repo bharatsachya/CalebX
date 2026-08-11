@@ -4,7 +4,7 @@
 CREATE TABLE messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   candidate_id uuid NOT NULL REFERENCES candidates (id) ON DELETE CASCADE,
-  wa_message_id text NOT NULL UNIQUE,
+  message_id text NOT NULL UNIQUE,
   direction message_direction NOT NULL,
   body text,
   created_at timestamptz NOT NULL DEFAULT now()

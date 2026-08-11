@@ -1,32 +1,92 @@
-import { getPool, queryOne } from "./db.ts";
-import type { Candidate } from "./types.ts";
+import { query, queryOne } from "./db.ts";
+import * as Q from "./queries/candidate.queries.ts";
+import type { Candidate, MaritalStatus } from "./types.ts";
 
 /**
- * Finds the candidate for a WhatsApp number, creating a bare row (just the
- * phone) if this is their first contact. A candidate exists in the DB before
- * consent is granted — the row itself carries no biodata until they accept.
+ * Validates that candidate marital status is allowed for matchmaking.
+ * Married individuals cannot sign up as candidates.
+ */
+export function validateMaritalStatus(status: string | null): void {
+  if (status && status.trim().toLowerCase() === "married") {
+    throw new Error(
+      "[db] Married individuals cannot sign up as matchmaking candidates.",
+    );
+  }
+}
+
+/**
+ * Finds the candidate for a WhatsApp number, creating a bare row if first contact.
  */
 export async function findOrCreateByPhone(waPhone: string): Promise<Candidate> {
+  const existing = await queryOne<Candidate>(Q.SELECT_CANDIDATE_BY_PHONE, [
+    waPhone,
+  ]);
+  if (existing) return existing;
+
+  try {
+    const inserted = await query<Candidate>(Q.INSERT_CANDIDATE_BY_PHONE, [
+      waPhone,
+    ]);
+    return inserted[0];
+  } catch (error) {
+    const again = await queryOne<Candidate>(Q.SELECT_CANDIDATE_BY_PHONE, [
+      waPhone,
+    ]);
+    if (again) return again;
+    throw error;
+  }
+}
+
+/**
+ * Finds or creates a candidate by Telegram ID.
+ */
+export async function findOrCreateByTelegramId(
+  telegramId: number | string,
+): Promise<Candidate> {
+  const numericId =
+    typeof telegramId === "string" ? parseInt(telegramId, 10) : telegramId;
   const existing = await queryOne<Candidate>(
-    "SELECT * FROM candidates WHERE wa_phone = $1",
-    [waPhone],
+    Q.SELECT_CANDIDATE_BY_TELEGRAM_ID,
+    [numericId],
   );
   if (existing) return existing;
 
-  // Concurrent first messages from the same number could race here; the
-  // unique constraint on wa_phone makes the loser re-select instead of
-  // duplicating a row.
-  const pool = getPool();
   try {
-    const inserted = await pool.query<Candidate>(
-      "INSERT INTO candidates (wa_phone) VALUES ($1) RETURNING *",
-      [waPhone],
+    const inserted = await query<Candidate>(Q.INSERT_CANDIDATE_BY_TELEGRAM_ID, [
+      numericId,
+    ]);
+    return inserted[0];
+  } catch (error) {
+    const again = await queryOne<Candidate>(Q.SELECT_CANDIDATE_BY_TELEGRAM_ID, [
+      numericId,
+    ]);
+    if (again) return again;
+    throw error;
+  }
+}
+
+/**
+ * Finds or creates a candidate by SHA-256 user ID hash.
+ */
+export async function findOrCreateByUserIdHash(
+  userIdHash: string,
+): Promise<Candidate> {
+  const existing = await queryOne<Candidate>(
+    Q.SELECT_CANDIDATE_BY_USER_ID_HASH,
+    [userIdHash],
+  );
+  if (existing) return existing;
+
+  try {
+    const inserted = await query<Candidate>(
+      Q.INSERT_CANDIDATE_BY_USER_ID_HASH,
+      [userIdHash],
     );
-    return inserted.rows[0];
+    return inserted[0];
   } catch (error) {
     const again = await queryOne<Candidate>(
-      "SELECT * FROM candidates WHERE wa_phone = $1",
-      [waPhone],
+      Q.SELECT_CANDIDATE_BY_USER_ID_HASH,
+      [userIdHash],
     );
     if (again) return again;
     throw error;
@@ -37,14 +97,9 @@ export async function setConsent(
   candidateId: string,
   granted: boolean,
 ): Promise<void> {
-  await getPool().query(
-    `UPDATE candidates
-     SET consent_granted = $2, consent_at = CASE WHEN $2 THEN now() ELSE consent_at END
-     WHERE id = $1`,
-    [candidateId, granted],
-  );
+  await query(Q.UPDATE_CANDIDATE_CONSENT, [candidateId, granted]);
 }
 
 export async function getById(id: string): Promise<Candidate | null> {
-  return queryOne<Candidate>("SELECT * FROM candidates WHERE id = $1", [id]);
+  return queryOne<Candidate>(Q.SELECT_CANDIDATE_BY_ID, [id]);
 }

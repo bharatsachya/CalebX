@@ -15,3 +15,4 @@ CREATE TYPE match_stage AS ENUM (
   'closed'
 );
 CREATE TYPE photo_visibility AS ENUM ('hidden', 'on_mutual_interest', 'public');
+CREATE TYPE marital_status AS ENUM ('never_married', 'single', 'divorced', 'widowed');

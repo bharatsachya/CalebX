@@ -55,12 +55,10 @@ export interface InboundRaw {
 
 /** What the rest of the bot works with. */
 export interface InboundMessage {
-  /**
-   * Digits only, no leading "+". Use verbatim as the reply address, and as
-   * the key into `candidates.wa_phone` — there is no separate user-id
-   * namespace, this product has only ever had one channel.
-   */
+  /** Digits only, no leading "+". Use verbatim as the reply address. */
   waId: string;
+  /** Channel-namespaced id, e.g. "wa:16505551234". */
+  userId: string;
   messageId: string;
   timestampMs: number;
   profileName?: string;

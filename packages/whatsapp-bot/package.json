@@ -8,6 +8,9 @@
     "start": "tsx src/whatsapp.ts"
   },
   "dependencies": {
+    "@calebx/agent": "*",
+    "@calebx/channel": "*",
+    "@calebx/core": "*",
     "@calebx/db": "*",
     "dotenv": "^16.4.5"
   },

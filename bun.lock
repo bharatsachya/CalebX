@@ -94,6 +94,9 @@
       "name": "@calebx/whatsapp-bot",
       "version": "1.0.0",
       "dependencies": {
+        "@calebx/agent": "*",
+        "@calebx/channel": "*",
+        "@calebx/core": "*",
         "@calebx/db": "*",
         "dotenv": "^16.4.5",
       },
