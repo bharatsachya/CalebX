@@ -1,6 +1,6 @@
 import { runAgent, addMemory } from "@calebx/agent";
 import { FileConsentStore, FileOnboardingStore } from "@calebx/channel";
-import { HelixUserRepository } from "@calebx/db";
+import { PostgresUserRepository } from "@calebx/db";
 import { WhatsAppClient } from "./client.ts";
 import { config } from "./config.ts";
 import { MessageDedupe } from "./dedupe.ts";
@@ -11,7 +11,7 @@ import { createWebhookServer } from "./server.ts";
 const client = new WhatsAppClient(config);
 const consent = new FileConsentStore(config.consentStorePath);
 const onboarding = new FileOnboardingStore(config.onboardingStorePath);
-const users = new HelixUserRepository();
+const users = new PostgresUserRepository();
 
 const dedupe = new MessageDedupe();
 const queue = new UserQueue();

@@ -1,5 +1,5 @@
 import { Bot } from "gramio";
-import { HelixUserRepository } from "@calebx/db";
+import { PostgresUserRepository } from "@calebx/db";
 import { runAgent, addMemory } from "@calebx/agent";
 import {
   CHANNEL_LABELS,
@@ -20,7 +20,7 @@ const HINTS = copy.TELEGRAM_HINTS;
 
 const consent = new FileConsentStore(config.consentStorePath);
 const onboarding = new FileOnboardingStore(config.onboardingStorePath);
-const userRepo = new HelixUserRepository();
+const userRepo = new PostgresUserRepository();
 
 const bot = new Bot(config.telegramBotToken);
 
