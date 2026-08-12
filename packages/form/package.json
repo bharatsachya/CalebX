@@ -1,0 +1,16 @@
+{
+  "name": "@calebx/form",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@calebx/channel": "*"
+  },
+  "peerDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

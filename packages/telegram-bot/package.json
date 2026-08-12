@@ -5,12 +5,16 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "tsx src/telegram.ts"
+    "start": "tsx src/telegram.ts",
+    "start:form": "tsx src/form-bot.ts"
   },
   "dependencies": {
     "@calebx/core": "*",
     "@calebx/agent": "*",
     "@calebx/channel": "*",
+    "@calebx/db": "*",
+    "@calebx/form": "*",
+    "@calebx/sheets": "*",
     "gramio": "^0.12.0",
     "dotenv": "^16.4.5"
   },
