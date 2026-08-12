@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// .env lives at the monorepo root — three levels up from packages/agent/src
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+// Load standard .env if present.
+dotenv.config();
 
 function required(name: string): string {
   const value = process.env[name];

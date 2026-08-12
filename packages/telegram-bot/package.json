@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@calebx/core": "*",
-    "@calebx/db": "*",
     "@calebx/agent": "*",
     "@calebx/channel": "*",
     "gramio": "^0.12.0",
