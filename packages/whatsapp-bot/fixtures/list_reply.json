@@ -1,0 +1,38 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "9999999999",
+      "changes": [
+        {
+          "field": "messages",
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "15550001111",
+              "phone_number_id": "111122223333"
+            },
+            "contacts": [
+              { "profile": { "name": "Test User" }, "wa_id": "15551234567" }
+            ],
+            "messages": [
+              {
+                "from": "15551234567",
+                "id": "wamid.LIST0001",
+                "timestamp": "1900000000",
+                "type": "interactive",
+                "interactive": {
+                  "type": "list_reply",
+                  "list_reply": {
+                    "id": "onboarding:age:25-34",
+                    "title": "25–34"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

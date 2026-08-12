@@ -26,6 +26,13 @@
         "typescript": "^5.4.5",
       },
     },
+    "packages/channel": {
+      "name": "@calebx/channel",
+      "version": "1.0.0",
+      "peerDependencies": {
+        "typescript": "^5.4.5",
+      },
+    },
     "packages/config": {
       "name": "@calebx/config",
       "version": "1.0.0",
@@ -67,6 +74,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@calebx/agent": "*",
+        "@calebx/channel": "*",
         "@calebx/core": "*",
         "@calebx/db": "*",
         "dotenv": "^16.4.5",
@@ -79,6 +87,20 @@
     "packages/types": {
       "name": "@calebx/types",
       "version": "1.0.0",
+    },
+    "packages/whatsapp-bot": {
+      "name": "@calebx/whatsapp-bot",
+      "version": "1.0.0",
+      "dependencies": {
+        "@calebx/agent": "*",
+        "@calebx/channel": "*",
+        "@calebx/core": "*",
+        "@calebx/db": "*",
+        "dotenv": "^16.4.5",
+      },
+      "peerDependencies": {
+        "typescript": "^5.4.5",
+      },
     },
   },
   "packages": {
@@ -118,6 +140,8 @@
 
     "@calebx/agent": ["@calebx/agent@workspace:packages/agent"],
 
+    "@calebx/channel": ["@calebx/channel@workspace:packages/channel"],
+
     "@calebx/config": ["@calebx/config@workspace:packages/config"],
 
     "@calebx/core": ["@calebx/core@workspace:packages/core"],
@@ -131,6 +155,8 @@
     "@calebx/telegram-bot": ["@calebx/telegram-bot@workspace:packages/telegram-bot"],
 
     "@calebx/types": ["@calebx/types@workspace:packages/types"],
+
+    "@calebx/whatsapp-bot": ["@calebx/whatsapp-bot@workspace:packages/whatsapp-bot"],
 
     "@cfworker/json-schema": ["@cfworker/json-schema@4.1.1", "", {}, "sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og=="],
 

@@ -129,13 +129,43 @@ packages/
 │       ├── retrieval.job.ts # GraphRAG → rank → LLM Stage 2
 │       └── dispatch.job.ts  # throttled Telegram outbound
 │
-└── telegram-bot/    # GramIO adapter — thin boundary only
-    ├── handlers/    #   message, /start, /forget, callback handlers
-    ├── middleware/  #   consent gate, rate-guard, Zod payload validator
-    └── bot.ts       #   wires ports → adapters, starts polling
+├── channel/         # Platform-agnostic conversation logic. Zero deps.
+│   ├── user-id.ts        #   namespaced ids: tg:123, wa:16505551234
+│   ├── copy.ts           #   every user-facing string, in one place
+│   ├── options.ts        #   age/purpose choices + typed-answer matching
+│   ├── onboarding.fsm.ts #   pure (state, input) → (state, prompts, memory)
+│   └── *.store.ts        #   consent + onboarding ports and JSON ledgers
+│
+├── telegram-bot/    # GramIO adapter — thin boundary only
+│   ├── consent.gate.ts    #   consent middleware
+│   ├── onboarding.gate.ts #   translates GramIO ↔ the shared FSM
+│   ├── keyboards.ts       #   InlineKeyboards built FROM the shared options
+│   └── telegram.ts        #   wires ports → adapters, starts polling
+│
+└── whatsapp-bot/    # Meta Cloud API adapter — thin boundary only
+    ├── server.ts          #   node:http webhook: verify → ack → enqueue
+    ├── signature.ts       #   X-Hub-Signature-256 over the raw bytes
+    ├── webhook.parse.ts   #   payload → messages (drops delivery receipts)
+    ├── dedupe.ts / queue.ts #  retry dedupe + per-user serialisation
+    ├── client.ts / render.ts #  Graph sends; buttons (≤3) or lists (>3)
+    └── whatsapp.ts        #   wires ports → adapters, starts listening
 ```
 
-**The hard rule:** `core/` has zero imports from `db/`, `telegram-bot/`, `inference/`, or `queue/`. Swapping HelixDB for another store, or adding a Discord adapter, touches only the relevant package — the domain is untouched.
+**The hard rule:** `core/` has zero imports from `db/`, `telegram-bot/`, `whatsapp-bot/`, `inference/`, or `queue/`. Swapping HelixDB for another store, or adding a Discord adapter, touches only the relevant package — the domain is untouched.
+
+**How a second chat platform stays honest:** everything a user actually sees or
+answers — the privacy notice, the four onboarding questions, the option values
+that get persisted, the summary written to memory — lives once, in
+`packages/channel`. Each bot only renders those prompts in its own idiom
+(Telegram inline keyboards, WhatsApp interactive lists) and translates its wire
+format to and from the shared FSM. `bun run scripts/verify-channel-parity.ts`
+asserts the shared strings byte-for-byte, and runs on every push.
+
+Users are addressed by a namespaced id (`tg:…`, `wa:…`) rather than a raw
+platform id. mem0 has one flat `user_id` space, so without the namespace a
+WhatsApp phone number could collide with a Telegram id and merge two strangers'
+personas. Ledgers written before this migrate their bare-numeric keys to `tg:`
+automatically on first read.
 
 ---
 
@@ -299,7 +329,7 @@ For the full architecture rationale and Claude-specific coding instructions see 
 - [ ] GraphRAG retrieval (ANN + BM25 hybrid + RRF fusion)
 - [ ] Consent gate + `/forget` command
 - [ ] Rate-limited dispatch queue with jitter
-- [ ] WhatsApp adapter (Baileys or Cloud API)
+- [x] WhatsApp adapter (official Meta Cloud API)
 - [ ] Discord adapter
 - [ ] Persona transparency dashboard (read-only web view of your own graph)
 - [ ] Federated identity (link Telegram + WhatsApp into one persona)

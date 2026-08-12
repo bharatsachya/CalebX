@@ -1,10 +1,6 @@
 import type { Bot } from "gramio";
-import type { ConsentStore } from "./consent.store.ts";
-import {
-  consentKeyboard,
-  NEEDS_CONSENT_NUDGE,
-  PRIVACY_NOTICE,
-} from "./messages.ts";
+import { copy, telegramUserId, type ConsentStore } from "@calebx/channel";
+import { consentKeyboard } from "./keyboards.ts";
 
 /** Commands always allowed through — they ARE the consent flow. */
 const ALWAYS_ALLOWED_COMMANDS = new Set(["/start", "/forget"]);
@@ -38,11 +34,14 @@ export function registerConsentGate(bot: Bot, consent: ConsentStore): void {
     const telegramId = context.from?.id;
     if (telegramId === undefined) return; // unidentifiable → drop, store nothing
 
-    if ((await consent.get(telegramId)) === "granted") return next();
+    if ((await consent.get(telegramUserId(telegramId))) === "granted") {
+      return next();
+    }
 
     // Not consented: re-prompt and STOP (no next()) → message is never ingested.
-    await context.send(`${NEEDS_CONSENT_NUDGE}\n\n${PRIVACY_NOTICE}`, {
-      reply_markup: consentKeyboard,
-    });
+    await context.send(
+      `${copy.NEEDS_CONSENT_NUDGE}\n\n${copy.privacyNotice(copy.TELEGRAM_HINTS)}`,
+      { reply_markup: consentKeyboard },
+    );
   });
 }
