@@ -9,6 +9,8 @@ out/
 # Local state: consent/onboarding ledgers, editor-plugin scratch files.
 .data/
 .remember/
+.claude/
+.openspecs/
 
 # Generated
 bun.lock
