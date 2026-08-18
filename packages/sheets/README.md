@@ -4,7 +4,7 @@ Google Sheets as the database for the form prototype. Implements the three
 storage ports declared in `@calebx/form`.
 
 Modelled on `packages/db`: a lazy client singleton, a local `getSheetsConfig()`
-reading `process.env` directly, and no-arg store classes wired at the bot's
+reading through `@calebx/config`, and no-arg store classes wired at the bot's
 composition root.
 
 ## Why not `googleapis`

@@ -8,8 +8,8 @@
     "init": "tsx src/init.ts"
   },
   "dependencies": {
+    "@calebx/config": "*",
     "@calebx/form": "*",
-    "dotenv": "^16.4.5",
     "google-auth-library": "^10.9.0"
   },
   "peerDependencies": {

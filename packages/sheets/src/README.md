@@ -1,14 +1,14 @@
 # @calebx/sheets — src
 
-| File                        | Responsibility                                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------------------------- |
-| `config.ts`                 | `getSheetsConfig()` — lazy, cached, throws on a missing var. Mirrors `packages/db/src/config.ts`. |
-| `client.ts`                 | JWT auth + the Sheets v4 REST calls. The analogue of `db.ts`'s pool.                              |
-| `table.ts`                  | Header-mapped row access: read, upsert, remove, index by `user_id`.                               |
-| `sheets.candidate.store.ts` | `CandidateStore` over the `Candidates` tab.                                                       |
-| `sheets.contact.store.ts`   | `ContactStore` over the `Contacts` tab. **Sensitive.**                                            |
-| `sheets.match.store.ts`     | `MatchStore` over the `Matches` tab. **Read-only.**                                               |
-| `init.ts`                   | `bun run sheets:init` — creates tabs, syncs header rows.                                          |
+| File                        | Responsibility                                                                                                         |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `config.ts`                 | `getSheetsConfig()` — lazy, cached, throws on a missing var via `@calebx/config`. Mirrors `packages/db/src/config.ts`. |
+| `client.ts`                 | JWT auth + the Sheets v4 REST calls. The analogue of `db.ts`'s pool.                                                   |
+| `table.ts`                  | Header-mapped row access: read, upsert, remove, index by `user_id`.                                                    |
+| `sheets.candidate.store.ts` | `CandidateStore` over the `Candidates` tab.                                                                            |
+| `sheets.contact.store.ts`   | `ContactStore` over the `Contacts` tab. **Sensitive.**                                                                 |
+| `sheets.match.store.ts`     | `MatchStore` over the `Matches` tab. **Read-only.**                                                                    |
+| `init.ts`                   | `bun run sheets:init` — creates tabs, syncs header rows.                                                               |
 
 ## Invariants
 

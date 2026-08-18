@@ -7,10 +7,10 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@calebx/config": "*",
     "@calebx/core": "*",
-    "openai": "^4.104.0",
     "mem0ai": "^2.1.9",
-    "dotenv": "^16.4.5"
+    "openai": "^4.104.0"
   },
   "peerDependencies": {
     "typescript": "^5.4.5"

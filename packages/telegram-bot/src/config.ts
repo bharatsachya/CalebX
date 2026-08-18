@@ -1,35 +1,15 @@
-import dotenv from "dotenv";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { dataPath, env } from "@calebx/config";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// .env lives at the monorepo root (three levels up from packages/telegram-bot/src).
-// Resolving it explicitly matters: `bun --cwd packages/telegram-bot` makes the
-// package the cwd, so a bare dotenv.config() looks in the wrong directory.
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
-
-function required(name: string): string {
-  const value = process.env[name];
-  if (!value || value.trim() === "" || value === `YOUR_${name}_HERE`) {
-    // Fatal boot error. (A structured logger is a future `@calebx/logger` concern;
-    // for a process-exiting boot failure, stderr is fine.)
-    console.error(
-      `Missing required environment variable: ${name}.\n` +
-        `Copy .env.example to .env and fill it in.`,
-    );
-    process.exit(1);
-  }
-  return value;
-}
+// Importing @calebx/config is what loads the root .env — it finds the monorepo
+// root itself, so nothing here depends on this file's depth or on the cwd.
+const e = env("telegram");
 
 export const config = {
-  telegramBotToken: required("TELEGRAM_BOT_TOKEN"),
+  telegramBotToken: e.requiredOrExit("TELEGRAM_BOT_TOKEN"),
   // Where the consent ledger is persisted. Defaults to a gitignored file at repo root.
-  consentStorePath:
-    process.env.CONSENT_STORE_PATH ??
-    path.resolve(__dirname, "../../../.data/consent.json"),
-  onboardingStorePath:
-    process.env.ONBOARDING_STORE_PATH ??
-    path.resolve(__dirname, "../../../.data/onboarding.json"),
+  consentStorePath: e.optional("CONSENT_STORE_PATH", dataPath("consent.json")),
+  onboardingStorePath: e.optional(
+    "ONBOARDING_STORE_PATH",
+    dataPath("onboarding.json"),
+  ),
 } as const;

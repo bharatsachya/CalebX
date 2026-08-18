@@ -10,6 +10,7 @@
     "bot:telegram": "bun --cwd packages/telegram-bot start",
     "bot:whatsapp": "bun --cwd packages/whatsapp-bot start",
     "bot:form": "bun --cwd packages/telegram-bot start:form",
+    "import": "bun --cwd packages/directory-import import",
     "db:migrate": "bun --cwd packages/db migrate",
     "sheets:init": "bun --cwd packages/sheets init",
     "typecheck": "tsc --noEmit",

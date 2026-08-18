@@ -17,8 +17,8 @@
       "name": "@calebx/agent",
       "version": "1.0.0",
       "dependencies": {
+        "@calebx/config": "*",
         "@calebx/core": "*",
-        "dotenv": "^16.4.5",
         "mem0ai": "^2.1.9",
         "openai": "^4.104.0",
       },
@@ -37,6 +37,7 @@
       "name": "@calebx/config",
       "version": "1.0.0",
       "dependencies": {
+        "dotenv": "^16.4.5",
         "zod": "^3.23.8",
       },
     },
@@ -48,7 +49,7 @@
       "name": "@calebx/db",
       "version": "1.0.0",
       "dependencies": {
-        "dotenv": "^16.4.5",
+        "@calebx/config": "*",
         "pg": "^8.11.3",
       },
       "devDependencies": {
@@ -99,8 +100,8 @@
       "name": "@calebx/sheets",
       "version": "1.0.0",
       "dependencies": {
+        "@calebx/config": "*",
         "@calebx/form": "*",
-        "dotenv": "^16.4.5",
         "google-auth-library": "^10.9.0",
       },
       "peerDependencies": {
@@ -113,11 +114,11 @@
       "dependencies": {
         "@calebx/agent": "*",
         "@calebx/channel": "*",
+        "@calebx/config": "*",
         "@calebx/core": "*",
         "@calebx/db": "*",
         "@calebx/form": "*",
         "@calebx/sheets": "*",
-        "dotenv": "^16.4.5",
         "gramio": "^0.12.0",
       },
       "peerDependencies": {
@@ -134,9 +135,9 @@
       "dependencies": {
         "@calebx/agent": "*",
         "@calebx/channel": "*",
+        "@calebx/config": "*",
         "@calebx/core": "*",
         "@calebx/db": "*",
-        "dotenv": "^16.4.5",
       },
       "peerDependencies": {
         "typescript": "^5.4.5",
