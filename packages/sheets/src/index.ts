@@ -1,6 +1,7 @@
 export { getSheetsConfig, type SheetsConfig } from "./config.ts";
 export {
   appendRow,
+  appendRows,
   columnLetter,
   deleteRow,
   ensureTab,

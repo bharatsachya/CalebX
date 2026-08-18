@@ -4,8 +4,10 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Load standard .env if present.
-dotenv.config();
+// .env lives at the monorepo root (three levels up from packages/telegram-bot/src).
+// Resolving it explicitly matters: `bun --cwd packages/telegram-bot` makes the
+// package the cwd, so a bare dotenv.config() looks in the wrong directory.
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 function required(name: string): string {
   const value = process.env[name];

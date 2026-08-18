@@ -111,10 +111,22 @@ export async function updateRow(
 
 /** Appends a row after the last populated row in the tab. */
 export async function appendRow(tab: string, row: Row): Promise<void> {
+  await appendRows(tab, [row]);
+}
+
+/**
+ * Appends many rows in a single request.
+ *
+ * A bulk import writes hundreds of rows; one `appendRow` each would blow through
+ * the 60-writes/minute quota and take minutes. Sheets appends the whole block in
+ * one call, so this is one write no matter the count. A no-op on an empty list.
+ */
+export async function appendRows(tab: string, rows: Row[]): Promise<void> {
+  if (rows.length === 0) return;
   const range = encodeRange(quoteTab(tab));
   await request(
     `/values/${range}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
-    { method: "POST", body: { values: [row] } },
+    { method: "POST", body: { values: rows } },
   );
 }
 

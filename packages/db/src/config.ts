@@ -1,7 +1,13 @@
 import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-// Load standard .env if present.
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// .env lives at the monorepo root (three levels up from packages/db/src).
+// Resolving it explicitly matters: `bun --cwd packages/db` makes the package the
+// cwd, so a bare dotenv.config() looks in the wrong directory.
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 export interface DbConfig {
   databaseUrl: string;
