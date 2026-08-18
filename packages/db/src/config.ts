@@ -1,7 +1,6 @@
-import dotenv from "dotenv";
+import { env } from "@calebx/config";
 
-// Load standard .env if present.
-dotenv.config();
+const e = env("db");
 
 export interface DbConfig {
   databaseUrl: string;
@@ -12,14 +11,8 @@ let cachedConfig: DbConfig | null = null;
 export function getDbConfig(): DbConfig {
   if (cachedConfig) return cachedConfig;
 
-  const value = process.env.DATABASE_URL;
-  if (!value || value.trim() === "" || value === "YOUR_DATABASE_URL_HERE") {
-    throw new Error(
-      "[db] Missing required environment variable: DATABASE_URL.\n" +
-        "Set DATABASE_URL in your environment or .env file.",
-    );
-  }
-
-  cachedConfig = { databaseUrl: value.trim() };
+  // Throws rather than exiting: this is a library call inside a running process,
+  // not a boot-time read in an entry point.
+  cachedConfig = { databaseUrl: e.required("DATABASE_URL") };
   return cachedConfig;
 }

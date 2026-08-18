@@ -1,0 +1,16 @@
+# Prettier does not read .gitignore, so anything ignored there and still on
+# disk gets scanned by `format:check` — and fails the pre-push hook for files
+# that are never committed.
+
+node_modules/
+dist/
+out/
+
+# Local state: consent/onboarding ledgers, editor-plugin scratch files.
+.data/
+.remember/
+.claude/
+.openspecs/
+
+# Generated
+bun.lock

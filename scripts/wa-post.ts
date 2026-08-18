@@ -12,39 +12,12 @@
 import { createHmac } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+// Importing @calebx/config loads the root .env and locates the repo root, so
+// this script works regardless of the cwd it is launched from.
+import { env, rootPath } from "@calebx/config";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, "..");
-const FIXTURES = path.join(ROOT, "packages/whatsapp-bot/fixtures");
-
-/**
- * Minimal .env reader. Scripts under scripts/ deliberately have no dependencies
- * (dotenv is a per-package dep, not a root one), and this only needs to find a
- * handful of unquoted values.
- */
-async function readEnv(): Promise<Record<string, string>> {
-  const env: Record<string, string> = {};
-  let contents: string;
-  try {
-    contents = await readFile(path.join(ROOT, ".env"), "utf8");
-  } catch {
-    return env;
-  }
-  for (const line of contents.split("\n")) {
-    const trimmed = line.trim();
-    if (trimmed === "" || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq <= 0) continue;
-    const key = trimmed.slice(0, eq).trim();
-    const value = trimmed
-      .slice(eq + 1)
-      .trim()
-      .replace(/^["']|["']$/g, "");
-    env[key] = value;
-  }
-  return env;
-}
+const FIXTURES = rootPath("packages/whatsapp-bot/fixtures");
+const e = env("wa-post");
 
 const args = process.argv.slice(2);
 const flag = (name: string): boolean => args.includes(name);
@@ -61,24 +34,20 @@ async function listFixtures(): Promise<string[]> {
 // Wrapped in main() rather than using top-level await, so this runs identically
 // under `bun run` and `npx tsx` (the repo root is not "type": "module").
 async function main(): Promise<void> {
-  const fileEnv = await readEnv();
-  const readVar = (name: string): string | undefined =>
-    process.env[name] ?? fileEnv[name];
-
   if (flag("--list") || args.length === 0) {
     console.log((await listFixtures()).map((n) => `  ${n}`).join("\n"));
     return;
   }
 
-  const appSecret = readVar("WHATSAPP_APP_SECRET");
-  if (!appSecret) {
+  const appSecret = e.optional("WHATSAPP_APP_SECRET", "");
+  if (appSecret === "") {
     console.error("WHATSAPP_APP_SECRET is not set — add it to .env.");
     process.exitCode = 1;
     return;
   }
 
-  const port = readVar("WHATSAPP_PORT") ?? "8787";
-  const webhookPath = readVar("WHATSAPP_WEBHOOK_PATH") ?? "/webhook";
+  const port = e.number("WHATSAPP_PORT", 8787);
+  const webhookPath = e.optional("WHATSAPP_WEBHOOK_PATH", "/webhook");
   const url = `http://localhost:${port}${webhookPath}`;
 
   const name = args[0]!;

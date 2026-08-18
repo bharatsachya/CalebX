@@ -1,11 +1,11 @@
 # packages/whatsapp-bot/src
 
-WhatsApp Cloud API adapter. Zero runtime dependencies beyond `dotenv` — the
-HTTP server is `node:http` and the Graph client is global `fetch`.
+WhatsApp Cloud API adapter. No third-party runtime dependencies — the HTTP
+server is `node:http` and the Graph client is global `fetch`.
 
 **Transport**
 
-- `config.ts` — env reads from the root `.env`; dry-run relaxes Graph credentials
+- `config.ts` — env reads via `@calebx/config`; dry-run relaxes Graph credentials
 - `server.ts` — `node:http` endpoint: GET verify handshake, POST
   verify-signature → ack 200 → dedupe → staleness → enqueue
 - `signature.ts` — `X-Hub-Signature-256` HMAC over the raw bytes

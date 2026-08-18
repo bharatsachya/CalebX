@@ -6,6 +6,7 @@
       "name": "calebx-monorepo",
       "devDependencies": {
         "@types/node": "^26.0.1",
+        "gramio": "^0.12.0",
         "husky": "^9.1.7",
         "lint-staged": "^16.4.0",
         "prettier": "^3.8.3",
@@ -17,8 +18,8 @@
       "name": "@calebx/agent",
       "version": "1.0.0",
       "dependencies": {
+        "@calebx/config": "*",
         "@calebx/core": "*",
-        "dotenv": "^16.4.5",
         "mem0ai": "^2.1.9",
         "openai": "^4.104.0",
       },
@@ -37,6 +38,7 @@
       "name": "@calebx/config",
       "version": "1.0.0",
       "dependencies": {
+        "dotenv": "^16.4.5",
         "zod": "^3.23.8",
       },
     },
@@ -48,7 +50,7 @@
       "name": "@calebx/db",
       "version": "1.0.0",
       "dependencies": {
-        "dotenv": "^16.4.5",
+        "@calebx/config": "*",
         "pg": "^8.11.3",
       },
       "devDependencies": {
@@ -58,9 +60,32 @@
         "typescript": "^5.4.5",
       },
     },
+    "packages/directory-import": {
+      "name": "@calebx/directory-import",
+      "version": "1.0.0",
+      "dependencies": {
+        "@calebx/channel": "*",
+        "@calebx/form": "*",
+        "@calebx/sheets": "*",
+        "pdfjs-dist": "^4.7.76",
+      },
+      "peerDependencies": {
+        "typescript": "^5.4.5",
+      },
+    },
     "packages/errors": {
       "name": "@calebx/errors",
       "version": "1.0.0",
+    },
+    "packages/form": {
+      "name": "@calebx/form",
+      "version": "1.0.0",
+      "dependencies": {
+        "@calebx/channel": "*",
+      },
+      "peerDependencies": {
+        "typescript": "^5.4.5",
+      },
     },
     "packages/logger": {
       "name": "@calebx/logger",
@@ -72,14 +97,29 @@
         "pino-pretty": "^11.0.0",
       },
     },
+    "packages/sheets": {
+      "name": "@calebx/sheets",
+      "version": "1.0.0",
+      "dependencies": {
+        "@calebx/config": "*",
+        "@calebx/form": "*",
+        "google-auth-library": "^10.9.0",
+      },
+      "peerDependencies": {
+        "typescript": "^5.4.5",
+      },
+    },
     "packages/telegram-bot": {
       "name": "@calebx/telegram-bot",
       "version": "1.0.0",
       "dependencies": {
         "@calebx/agent": "*",
         "@calebx/channel": "*",
+        "@calebx/config": "*",
         "@calebx/core": "*",
-        "dotenv": "^16.4.5",
+        "@calebx/db": "*",
+        "@calebx/form": "*",
+        "@calebx/sheets": "*",
         "gramio": "^0.12.0",
       },
       "peerDependencies": {
@@ -96,9 +136,9 @@
       "dependencies": {
         "@calebx/agent": "*",
         "@calebx/channel": "*",
+        "@calebx/config": "*",
         "@calebx/core": "*",
         "@calebx/db": "*",
-        "dotenv": "^16.4.5",
       },
       "peerDependencies": {
         "typescript": "^5.4.5",
@@ -150,9 +190,15 @@
 
     "@calebx/db": ["@calebx/db@workspace:packages/db"],
 
+    "@calebx/directory-import": ["@calebx/directory-import@workspace:packages/directory-import"],
+
     "@calebx/errors": ["@calebx/errors@workspace:packages/errors"],
 
+    "@calebx/form": ["@calebx/form@workspace:packages/form"],
+
     "@calebx/logger": ["@calebx/logger@workspace:packages/logger"],
+
+    "@calebx/sheets": ["@calebx/sheets@workspace:packages/sheets"],
 
     "@calebx/telegram-bot": ["@calebx/telegram-bot@workspace:packages/telegram-bot"],
 
@@ -243,6 +289,30 @@
     "@langchain/core": ["@langchain/core@1.2.1", "", { "dependencies": { "@cfworker/json-schema": "^4.0.2", "@standard-schema/spec": "^1.1.0", "js-tiktoken": "^1.0.12", "langsmith": ">=0.5.0 <1.0.0", "mustache": "^4.2.0", "p-queue": "^6.6.2", "zod": "^3.25.76 || ^4" } }, "sha512-NNG/cC5FGuHDOAP56h0ddp8Rfk8p+othWzEK5RV9JIG6RvnF5vGa5r0AEGtKfQieed7s1kC42GuIzVOBvMBL/g=="],
 
     "@mistralai/mistralai": ["@mistralai/mistralai@1.15.1", "", { "dependencies": { "ws": "^8.18.0", "zod": "^3.25.0 || ^4.0.0", "zod-to-json-schema": "^3.24.1" } }, "sha512-fb995eiz3r0KsBGtRjFV+/iLbX+UpfalxpF+YitT3R6ukrPD4PN+FGwwmYcRFhNAzVzDUtTVxQYnjQWEnwV5nw=="],
+
+    "@napi-rs/canvas": ["@napi-rs/canvas@0.1.100", "", { "optionalDependencies": { "@napi-rs/canvas-android-arm64": "0.1.100", "@napi-rs/canvas-darwin-arm64": "0.1.100", "@napi-rs/canvas-darwin-x64": "0.1.100", "@napi-rs/canvas-linux-arm-gnueabihf": "0.1.100", "@napi-rs/canvas-linux-arm64-gnu": "0.1.100", "@napi-rs/canvas-linux-arm64-musl": "0.1.100", "@napi-rs/canvas-linux-riscv64-gnu": "0.1.100", "@napi-rs/canvas-linux-x64-gnu": "0.1.100", "@napi-rs/canvas-linux-x64-musl": "0.1.100", "@napi-rs/canvas-win32-arm64-msvc": "0.1.100", "@napi-rs/canvas-win32-x64-msvc": "0.1.100" } }, "sha512-xglYA6q3XO5P3BNJYxVZ1IV7DLVjp1Py6nwag88YntrS+3vKHyYcMqXVS4ZztJmwz2uGvz1FWhI/4LgbR5uQDA=="],
+
+    "@napi-rs/canvas-android-arm64": ["@napi-rs/canvas-android-arm64@0.1.100", "", { "os": "android", "cpu": "arm64" }, "sha512-hjhCKhntPv9+t4ckHymdx0phYNcVW+GKQR6Lzw2zE+pOVjOplSmtx9nNNknTjbEDLcuLZqA1y8ufKg1XfgftzQ=="],
+
+    "@napi-rs/canvas-darwin-arm64": ["@napi-rs/canvas-darwin-arm64@0.1.100", "", { "os": "darwin", "cpu": "arm64" }, "sha512-2PcswRaC7Ly645DGt88///zuFDhJxJYdKAs1uU3mfk1atYkXufgcgLfBpk6Tm12nCQBaNt1wpybuPZ4qOhTo8A=="],
+
+    "@napi-rs/canvas-darwin-x64": ["@napi-rs/canvas-darwin-x64@0.1.100", "", { "os": "darwin", "cpu": "x64" }, "sha512-ePNZtj7pNIva/siZMg+HmbeozkIjqUIYdoymH8HaA3qK7LfzFN4WMBM8G6HQ9ZC+H3+Dnn5pqtiXpgLykaPOhw=="],
+
+    "@napi-rs/canvas-linux-arm-gnueabihf": ["@napi-rs/canvas-linux-arm-gnueabihf@0.1.100", "", { "os": "linux", "cpu": "arm" }, "sha512-d5cDB48oWFGU8/XPhUOFAlySgb/VAu7D+s8fi55K1Pcfg8aPplHWqMgibhVLU8ky7Pyg/fuiVLz4Nf3JrSTuUA=="],
+
+    "@napi-rs/canvas-linux-arm64-gnu": ["@napi-rs/canvas-linux-arm64-gnu@0.1.100", "", { "os": "linux", "cpu": "arm64" }, "sha512-rDxgxRu69RvDlX/bh9o22DxLsGr8EqsNgotL9+RwQE1S0b0cqeatqsw6aW45mukm0B42DIAaAacKaYQ8cqS1nw=="],
+
+    "@napi-rs/canvas-linux-arm64-musl": ["@napi-rs/canvas-linux-arm64-musl@0.1.100", "", { "os": "linux", "cpu": "arm64" }, "sha512-K3mDW66N+xT2/V439u1alFANiBUjdEx2gLiNYnCmUsva5jZMxWTjafBYwTzYK+EMFMHrUoabuU+T1BIP5CgbYQ=="],
+
+    "@napi-rs/canvas-linux-riscv64-gnu": ["@napi-rs/canvas-linux-riscv64-gnu@0.1.100", "", { "os": "linux", "cpu": "none" }, "sha512-mooqUBTIsccZpnoQC4NgrC1v6C1vof39etLNMnBwCY+p0gajWJvAHLGQ6g/gGyS5YrpDW+GefSN4+Cvcr08UWw=="],
+
+    "@napi-rs/canvas-linux-x64-gnu": ["@napi-rs/canvas-linux-x64-gnu@0.1.100", "", { "os": "linux", "cpu": "x64" }, "sha512-1eCvkDCazm7FFhsT7DfGOdSaHgZVK3bt/dSBl5EWHOWmnz+I7j8tPseJqqD81NF+MH21jKUK4wQSDjN0mdhnTg=="],
+
+    "@napi-rs/canvas-linux-x64-musl": ["@napi-rs/canvas-linux-x64-musl@0.1.100", "", { "os": "linux", "cpu": "x64" }, "sha512-20arT6lnI19S68qNlii73TSEDbECNgzMz2EpldC1V3mZFuRkeujXkcebRk0LRJe9SEUAooYiLokfMViY8IX7yA=="],
+
+    "@napi-rs/canvas-win32-arm64-msvc": ["@napi-rs/canvas-win32-arm64-msvc@0.1.100", "", { "os": "win32", "cpu": "arm64" }, "sha512-DZFFT1wIAg37LJw37yhMRFfjATd3vTQzjZ1Yki8u2vhO6Hi5VE6BVaGQ1aaDu7xb4iMErz+9EOwjpS7xcxFeBw=="],
+
+    "@napi-rs/canvas-win32-x64-msvc": ["@napi-rs/canvas-win32-x64-msvc@0.1.100", "", { "os": "win32", "cpu": "x64" }, "sha512-MyT1j3mHC2+Lu4pBi9mKyMJhtP6U7k7EldY7sj/uS5gJA65gTXt8MefJQXLJo5d/vZbuWmfxzkEUNc/urV3pHA=="],
 
     "@pinojs/redact": ["@pinojs/redact@0.4.0", "", {}, "sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg=="],
 
@@ -655,6 +725,8 @@
     "p-timeout": ["p-timeout@3.2.0", "", { "dependencies": { "p-finally": "^1.0.0" } }, "sha512-rhIwUycgwwKcP9yTOOFK/AKsAopjjCakVqLHePO3CC6Mir1Z99xT+R63jZxAT5lFZLa2inS5h+ZS2GvR99/FBg=="],
 
     "packet-reader": ["packet-reader@1.0.0", "", {}, "sha512-HAKu/fG3HpHFO0AA8WE8q2g+gBJaZ9MG7fcKk+IJPLTGAD6Psw4443l+9DGRbOIh3/aXr7Phy0TjilYivJo5XQ=="],
+
+    "pdfjs-dist": ["pdfjs-dist@4.10.38", "", { "optionalDependencies": { "@napi-rs/canvas": "^0.1.65" } }, "sha512-/Y3fcFrXEAsMjJXeL9J8+ZG9U01LbuWaYypvDW2ycW1jL269L3js3DVBjDJ0Up9Np1uqDXsDrRihHANhZOlwdQ=="],
 
     "pg": ["pg@8.11.3", "", { "dependencies": { "buffer-writer": "2.0.0", "packet-reader": "1.0.0", "pg-connection-string": "^2.6.2", "pg-pool": "^3.6.1", "pg-protocol": "^1.6.0", "pg-types": "^2.1.0", "pgpass": "1.x" }, "optionalDependencies": { "pg-cloudflare": "^1.1.1" }, "peerDependencies": { "pg-native": ">=3.0.1" }, "optionalPeers": ["pg-native"] }, "sha512-+9iuvG8QfaaUrrph+kpF24cXkH1YOOUeArRNYIxq1viYHZagBxrTno7cecY1Fa44tJeZvaoG+Djpkc3JwehN5g=="],
 

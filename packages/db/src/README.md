@@ -1,6 +1,7 @@
 # src
 
-- `config.ts` — loads `DATABASE_URL` from the repo-root `.env`.
+- `config.ts` — reads `DATABASE_URL` through `@calebx/config` (which loads the
+  repo-root `.env`).
 - `db.ts` — the one `pg.Pool` for the process, plus `query`/`queryOne` helpers.
 - `migrate.ts` — applies `migrations/*.sql` in order, tracked in `schema_migrations`.
 - `types.ts` — hand-written TS mirrors of the six tables. Update by hand

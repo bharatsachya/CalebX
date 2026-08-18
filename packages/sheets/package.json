@@ -1,0 +1,18 @@
+{
+  "name": "@calebx/sheets",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "init": "tsx src/init.ts"
+  },
+  "dependencies": {
+    "@calebx/config": "*",
+    "@calebx/form": "*",
+    "google-auth-library": "^10.9.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
