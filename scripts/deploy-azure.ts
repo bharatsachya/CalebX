@@ -52,6 +52,55 @@ function run(cmd: string, args: string[], captureOutput = false): string {
   return res.stdout?.trim() ?? "";
 }
 
+function ensureProviderRegistered(namespace: string): void {
+  const state = run(
+    "az",
+    [
+      "provider",
+      "show",
+      "-n",
+      namespace,
+      "--query",
+      "registrationState",
+      "-o",
+      "tsv",
+    ],
+    true,
+  );
+  if (state === "Registered") return;
+
+  console.log(`⏳ Registering Azure resource provider ${namespace}...`);
+  run("az", ["provider", "register", "--namespace", namespace, "-o", "none"]);
+  while (true) {
+    const s = run(
+      "az",
+      [
+        "provider",
+        "show",
+        "-n",
+        namespace,
+        "--query",
+        "registrationState",
+        "-o",
+        "tsv",
+      ],
+      true,
+    );
+    if (s === "Registered") {
+      console.log(`✓ ${namespace} registered!`);
+      break;
+    }
+    console.log(`  waiting for ${namespace} registration...`);
+    spawnSync("sleep", ["3"]);
+  }
+}
+
+// 0. Ensure required providers are registered
+console.log("⚙️ 0. Ensuring Azure providers are registered...");
+ensureProviderRegistered("Microsoft.ContainerRegistry");
+ensureProviderRegistered("Microsoft.App");
+ensureProviderRegistered("Microsoft.OperationalInsights");
+
 // 1. Create Resource Group
 console.log(`\n📦 1. Creating Resource Group (${RESOURCE_GROUP})...`);
 run("az", [
