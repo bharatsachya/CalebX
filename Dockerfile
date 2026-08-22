@@ -22,7 +22,8 @@ COPY packages/telegram-bot/package.json ./packages/telegram-bot/
 COPY packages/types/package.json ./packages/types/
 COPY packages/whatsapp-bot/package.json ./packages/whatsapp-bot/
 
-RUN bun install --production
+RUN bun install --production --ignore-scripts
+
 
 # Copy source code and configurations
 COPY tsconfig.json ./
