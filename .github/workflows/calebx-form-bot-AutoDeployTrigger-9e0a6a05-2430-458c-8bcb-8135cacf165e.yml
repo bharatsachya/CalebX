@@ -1,0 +1,49 @@
+name: Trigger auto deployment for calebx-form-bot
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - '**'
+    - '.github/workflows/calebx-form-bot-AutoDeployTrigger-9e0a6a05-2430-458c-8bcb-8135cacf165e.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.CALEBXFORMBOT_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.CALEBXFORMBOT_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.CALEBXFORMBOT_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
+          _targetLabelKey_: _targetLabel_
+          registryUrl: acrcalebx9098.azurecr.io
+          registryUsername: ${{ secrets.CALEBXFORMBOT_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.CALEBXFORMBOT_REGISTRY_PASSWORD }}
+          containerAppName: calebx-form-bot
+          resourceGroup: rg-calebx-centralindia
+          imageToBuild: acrcalebx9098.azurecr.io/calebx-form-bot:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
