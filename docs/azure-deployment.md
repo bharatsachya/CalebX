@@ -119,9 +119,10 @@ az containerapp create \
   --registry-password "$ACR_PASSWORD" \
   --min-replicas 1 \
   --max-replicas 1 \
-  --cpu 0.5 \
-  --memory 1.0Gi \
+  --cpu 0.25 \
+  --memory 0.5Gi \
   --secrets \
+
     telegram-token="<YOUR_TELEGRAM_BOT_TOKEN>" \
     google-private-key="<YOUR_GOOGLE_PRIVATE_KEY>" \
   --env-vars \
