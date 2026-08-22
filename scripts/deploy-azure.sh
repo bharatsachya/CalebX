@@ -2,9 +2,10 @@
 set -e
 
 # Configuration
-RESOURCE_GROUP="${RESOURCE_GROUP:-rg-calebx-prod}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-rg-calebx-centralindia}"
 LOCATION="${LOCATION:-centralindia}"
-ENVIRONMENT_NAME="${ENVIRONMENT_NAME:-cae-calebx-prod}"
+ENVIRONMENT_NAME="${ENVIRONMENT_NAME:-cae-calebx-centralindia}"
+
 
 ACR_NAME="${ACR_NAME:-acrcalebx$RANDOM}"
 APP_NAME="${APP_NAME:-calebx-form-bot}"

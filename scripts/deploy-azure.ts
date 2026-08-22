@@ -6,9 +6,10 @@
 
 import { spawnSync } from "node:child_process";
 
-const RESOURCE_GROUP = process.env.RESOURCE_GROUP ?? "rg-calebx-prod";
+const RESOURCE_GROUP = process.env.RESOURCE_GROUP ?? "rg-calebx-centralindia";
 const LOCATION = process.env.LOCATION ?? "centralindia";
-const ENVIRONMENT_NAME = process.env.ENVIRONMENT_NAME ?? "cae-calebx-prod";
+const ENVIRONMENT_NAME =
+  process.env.ENVIRONMENT_NAME ?? "cae-calebx-centralindia";
 
 const ACR_NAME =
   process.env.ACR_NAME ?? `acrcalebx${Math.floor(1000 + Math.random() * 9000)}`;
