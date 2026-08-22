@@ -8,7 +8,7 @@ import { SheetsCandidateStore, SheetsContactStore } from "@calebx/sheets";
 import { normalizePhone } from "@calebx/channel";
 
 async function seed(): Promise<void> {
-  const rawPhone = "7425077668";
+  const rawPhone = "8189422985";
   const normalizedPhone = normalizePhone(rawPhone);
   if (!normalizedPhone) {
     throw new Error(`Invalid phone number: ${rawPhone}`);
