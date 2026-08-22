@@ -62,6 +62,7 @@ export type Answers = Record<string, string>;
 
 export interface CandidateProfile {
   userId: string;
+  telegramUserId?: string;
   createdAt: string;
   updatedAt: string;
   /**

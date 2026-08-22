@@ -78,3 +78,21 @@ function shortLabel(field: FormField): string {
 function clip(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
 }
+
+/** Phone verification contact-sharing keyboard. */
+export const requestPhoneKeyboard = {
+  keyboard: [
+    [
+      {
+        text: copy.REQUEST_PHONE_BUTTON,
+        request_contact: true,
+      },
+    ],
+  ],
+  resize_keyboard: true,
+  one_time_keyboard: true,
+};
+
+export const removeKeyboard = {
+  remove_keyboard: true as const,
+};

@@ -17,6 +17,7 @@ import {
   type ContactRecord,
   type ContactStore,
 } from "@calebx/form";
+import { isPhoneMatch } from "@calebx/channel";
 import { SheetTable, type Cells } from "./table.ts";
 
 const UPDATED_AT = "updated_at";
@@ -35,6 +36,28 @@ export class SheetsContactStore implements ContactStore {
     }
 
     return { userId, answers };
+  }
+
+  async findByPhone(normalizedPhone: string): Promise<ContactRecord[]> {
+    const all = await this.table.readAll();
+    const matches: ContactRecord[] = [];
+
+    for (const cells of all) {
+      const userId = cells[USER_ID_COLUMN];
+      if (!userId) continue;
+
+      const rawPhone = cells["phone"];
+      if (rawPhone && isPhoneMatch(rawPhone, normalizedPhone)) {
+        const answers: Record<string, string> = {};
+        for (const field of SENSITIVE_FIELDS) {
+          const value = cells[field.id];
+          if (value !== undefined && value !== "") answers[field.id] = value;
+        }
+        matches.push({ userId, answers });
+      }
+    }
+
+    return matches;
   }
 
   async set(userId: string, record: ContactRecord): Promise<void> {

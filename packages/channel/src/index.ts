@@ -41,3 +41,10 @@ export {
   type MemoryWrite,
   type Prompt,
 } from "./onboarding.fsm.ts";
+
+export {
+  isPhoneMatch,
+  isValidPhone,
+  maskPhone,
+  normalizePhone,
+} from "./phone.ts";

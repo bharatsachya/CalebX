@@ -11,7 +11,7 @@
  * own notes columns alongside the bot's.
  */
 
-import { USER_ID_COLUMN } from "@calebx/form";
+import { TELEGRAM_USER_ID_COLUMN, USER_ID_COLUMN } from "@calebx/form";
 import { appendRow, deleteRow, getValues, updateRow } from "./client.ts";
 
 /** A row's cells keyed by header name. */
@@ -21,6 +21,8 @@ interface Snapshot {
   headers: string[];
   /** user_id → 1-based sheet row number. */
   rowNumbers: Map<string, number>;
+  /** telegram_user_id → 1-based sheet row number. */
+  telegramRowNumbers: Map<string, number>;
 }
 
 export class SheetTable {
@@ -40,17 +42,29 @@ export class SheetTable {
     const rows = await getValues(this.tab);
     const headers = rows[0] ?? [];
     const userIdColumn = headers.indexOf(USER_ID_COLUMN);
+    const telegramIdColumn = headers.indexOf(TELEGRAM_USER_ID_COLUMN);
 
     const rowNumbers = new Map<string, number>();
-    if (userIdColumn !== -1) {
-      for (let index = 1; index < rows.length; index++) {
-        const key = rows[index]?.[userIdColumn]?.trim();
-        // First occurrence wins, so a hand-pasted duplicate can't hide the original.
+    const telegramRowNumbers = new Map<string, number>();
+
+    for (let index = 1; index < rows.length; index++) {
+      const row = rows[index];
+      if (!row) continue;
+
+      if (userIdColumn !== -1) {
+        const key = row[userIdColumn]?.trim();
         if (key && !rowNumbers.has(key)) rowNumbers.set(key, index + 1);
+      }
+
+      if (telegramIdColumn !== -1) {
+        const tgKey = row[telegramIdColumn]?.trim();
+        if (tgKey && !telegramRowNumbers.has(tgKey)) {
+          telegramRowNumbers.set(tgKey, index + 1);
+        }
       }
     }
 
-    this.snapshot = { headers, rowNumbers };
+    this.snapshot = { headers, rowNumbers, telegramRowNumbers };
     return this.snapshot;
   }
 
@@ -60,6 +74,23 @@ export class SheetTable {
 
   async headers(): Promise<string[]> {
     return (await this.load()).headers;
+  }
+
+  /** A user's row by Telegram user ID as header→cell, or null if unlinked. */
+  async readByTelegramId(telegramUserId: string): Promise<Cells | null> {
+    const { headers, telegramRowNumbers } = await this.load();
+    const rowNumber = telegramRowNumbers.get(telegramUserId.trim());
+    if (rowNumber === undefined) return null;
+
+    const rows = await getValues(this.tab);
+    const row = rows[rowNumber - 1];
+    if (!row) return null;
+
+    const cells: Cells = {};
+    headers.forEach((header, index) => {
+      cells[header] = row[index] ?? "";
+    });
+    return cells;
   }
 
   /** A user's row as header→cell, or null if they have none. */

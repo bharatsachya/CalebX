@@ -103,6 +103,7 @@
       "name": "@calebx/sheets",
       "version": "1.0.0",
       "dependencies": {
+        "@calebx/channel": "*",
         "@calebx/config": "*",
         "@calebx/form": "*",
         "google-auth-library": "^10.9.0",
@@ -121,6 +122,7 @@
         "@calebx/core": "*",
         "@calebx/db": "*",
         "@calebx/form": "*",
+        "@calebx/logger": "*",
         "@calebx/sheets": "*",
         "gramio": "^0.12.0",
       },

@@ -12,18 +12,24 @@
  */
 
 import { Bot } from "gramio";
-import { FileConsentStore } from "@calebx/channel";
 import { FORM_FIELDS, SHEET_TABS } from "@calebx/form";
 import {
   SheetsCandidateStore,
+  SheetsConsentStore,
   SheetsContactStore,
+  SheetsIdentityStore,
   SheetsMatchStore,
 } from "@calebx/sheets";
 import { config } from "./config.ts";
 import { registerConsentGate } from "./consent.gate.ts";
 import { registerFormHandlers } from "./form/handlers.ts";
+import { logAuditEvent } from "./observability.ts";
 
-const consent = new FileConsentStore(config.consentStorePath);
+const candidates = new SheetsCandidateStore();
+const contacts = new SheetsContactStore();
+const matches = new SheetsMatchStore();
+const identity = new SheetsIdentityStore({ candidates, contacts });
+const consent = new SheetsConsentStore(candidates);
 
 const bot = new Bot(config.telegramBotToken);
 
@@ -31,20 +37,22 @@ const bot = new Bot(config.telegramBotToken);
 //    /start and /forget pass through; everything else gets the notice.
 registerConsentGate(bot, consent);
 
-// 2) The form itself.
+// 2) The form and identity linking.
 registerFormHandlers(bot, {
-  candidates: new SheetsCandidateStore(),
-  contacts: new SheetsContactStore(),
-  matches: new SheetsMatchStore(),
+  candidates,
+  contacts,
+  matches,
+  identity,
   consent,
 });
 
-bot.onStart(({ info }) =>
+bot.onStart(({ info }) => {
+  logAuditEvent("bot_started", { username: info.username });
   console.log(
     `📋 @${info.username} up and polling — ${FORM_FIELDS.length} questions, ` +
       `sheet tabs: ${Object.values(SHEET_TABS).join(", ")}.`,
-  ),
-);
+  );
+});
 
 bot.start();
 

@@ -15,6 +15,7 @@
     "@calebx/core": "*",
     "@calebx/db": "*",
     "@calebx/form": "*",
+    "@calebx/logger": "*",
     "@calebx/sheets": "*",
     "gramio": "^0.12.0"
   },

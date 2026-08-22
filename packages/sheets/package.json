@@ -8,6 +8,7 @@
     "init": "tsx src/init.ts"
   },
   "dependencies": {
+    "@calebx/channel": "*",
     "@calebx/config": "*",
     "@calebx/form": "*",
     "google-auth-library": "^10.9.0"
