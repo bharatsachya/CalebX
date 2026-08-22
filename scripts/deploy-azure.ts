@@ -149,19 +149,24 @@ run("az", [
   "none",
 ]);
 
-// 4. Build and push image
-console.log("\n🔨 4. Building and pushing Docker image to Azure...");
-run("az", [
-  "acr",
+// 4. Build and push image using local Docker
+console.log(
+  "\n🔨 4. Logging in to ACR and building Docker image for linux/amd64...",
+);
+run("az", ["acr", "login", "--name", ACR_NAME]);
+run("docker", [
   "build",
-  "--registry",
-  ACR_NAME,
-  "--image",
-  `${APP_NAME}:${IMAGE_TAG}`,
+  "--platform",
+  "linux/amd64",
+  "-t",
+  `${ACR_NAME}.azurecr.io/${APP_NAME}:${IMAGE_TAG}`,
   ".",
 ]);
+console.log("\n📤 Pushing Docker image to Azure Container Registry...");
+run("docker", ["push", `${ACR_NAME}.azurecr.io/${APP_NAME}:${IMAGE_TAG}`]);
 
 // 5. Get ACR Credentials
+
 console.log("\n🔑 5. Retrieving ACR credentials...");
 const acrPassword = run(
   "az",
