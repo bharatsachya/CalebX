@@ -53,8 +53,9 @@ az account set --subscription "<YOUR_SUBSCRIPTION_ID_OR_NAME>"
 
 ```bash
 RESOURCE_GROUP="rg-calebx-prod"
-LOCATION="eastus"
+LOCATION="centralindia"
 ENVIRONMENT_NAME="cae-calebx-prod"
+
 ACR_NAME="acrcalebxprod"
 APP_NAME="calebx-form-bot"
 IMAGE_TAG="v1.0.0"

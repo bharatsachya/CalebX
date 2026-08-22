@@ -3,8 +3,9 @@ set -e
 
 # Configuration
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-calebx-prod}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-centralindia}"
 ENVIRONMENT_NAME="${ENVIRONMENT_NAME:-cae-calebx-prod}"
+
 ACR_NAME="${ACR_NAME:-acrcalebx$RANDOM}"
 APP_NAME="${APP_NAME:-calebx-form-bot}"
 IMAGE_TAG="${IMAGE_TAG:-v1.0.0}"
