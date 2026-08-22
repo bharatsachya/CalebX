@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "init": "tsx src/init.ts"
+    "init": "bun src/init.ts"
   },
   "dependencies": {
     "@calebx/channel": "*",
