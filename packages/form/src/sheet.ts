@@ -22,9 +22,13 @@ export const SHEET_TABS = {
 /** Columns every tab is keyed by. Namespaced `tg:123`, never a bare platform id. */
 export const USER_ID_COLUMN = "user_id";
 
+/** Channel identity linking column. */
+export const TELEGRAM_USER_ID_COLUMN = "telegram_user_id";
+
 /** Bookkeeping columns on `Candidates`, ahead of the question columns. */
 export const CANDIDATE_META_COLUMNS = [
   USER_ID_COLUMN,
+  TELEGRAM_USER_ID_COLUMN,
   "created_at",
   "updated_at",
   "consent_granted",

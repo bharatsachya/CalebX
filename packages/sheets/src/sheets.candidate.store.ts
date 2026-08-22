@@ -8,6 +8,7 @@
 import {
   PUBLIC_FIELDS,
   SHEET_TABS,
+  TELEGRAM_USER_ID_COLUMN,
   USER_ID_COLUMN,
   type CandidateProfile,
   type CandidateStore,
@@ -27,6 +28,25 @@ export class SheetsCandidateStore implements CandidateStore {
 
     return {
       userId,
+      telegramUserId: cells[TELEGRAM_USER_ID_COLUMN] || undefined,
+      createdAt: cells[CREATED_AT] ?? "",
+      updatedAt: cells[UPDATED_AT] ?? "",
+      consentGranted: cells[CONSENT_GRANTED] === "TRUE",
+      answers: readAnswers(cells),
+    };
+  }
+
+  async findByTelegramId(
+    telegramUserId: string,
+  ): Promise<CandidateProfile | null> {
+    const cells = await this.table.readByTelegramId(telegramUserId);
+    if (!cells) return null;
+    const userId = cells[USER_ID_COLUMN];
+    if (!userId) return null;
+
+    return {
+      userId,
+      telegramUserId: cells[TELEGRAM_USER_ID_COLUMN] || undefined,
       createdAt: cells[CREATED_AT] ?? "",
       updatedAt: cells[UPDATED_AT] ?? "",
       consentGranted: cells[CONSENT_GRANTED] === "TRUE",
@@ -41,6 +61,10 @@ export class SheetsCandidateStore implements CandidateStore {
       [UPDATED_AT]: profile.updatedAt,
       [CONSENT_GRANTED]: profile.consentGranted ? "TRUE" : "FALSE",
     };
+
+    if (profile.telegramUserId) {
+      cells[TELEGRAM_USER_ID_COLUMN] = profile.telegramUserId;
+    }
 
     for (const field of PUBLIC_FIELDS) {
       const answer = profile.answers[field.id];

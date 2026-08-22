@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "tsx src/telegram.ts",
-    "start:form": "tsx src/form-bot.ts"
+    "start": "bun src/telegram.ts",
+    "start:form": "bun src/form-bot.ts"
   },
   "dependencies": {
     "@calebx/agent": "*",
@@ -15,6 +15,7 @@
     "@calebx/core": "*",
     "@calebx/db": "*",
     "@calebx/form": "*",
+    "@calebx/logger": "*",
     "@calebx/sheets": "*",
     "gramio": "^0.12.0"
   },

@@ -6,13 +6,17 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "import": "tsx src/cli.ts"
+    "import": "tsx src/cli.ts",
+    "import:images": "tsx src/cli.images.ts"
   },
   "dependencies": {
     "@calebx/channel": "*",
+    "@calebx/config": "*",
     "@calebx/form": "*",
     "@calebx/sheets": "*",
-    "pdfjs-dist": "^4.7.76"
+    "pdfjs-dist": "^4.7.76",
+    "sharp": "^0.35.3",
+    "tesseract.js": "^7.0.0"
   },
   "peerDependencies": {
     "typescript": "^5.4.5"

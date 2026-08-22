@@ -41,6 +41,29 @@ export const WELCOME = [
 
 export const RESUMING = "Picking up where we left off.";
 
+export const RESUMING_PARTIAL =
+  "We already have some of your information. Let's complete the remaining details.";
+
+export const REQUEST_PHONE_PROMPT =
+  "To find your profile and complete your details, please share your phone number using the button below.";
+
+export const REQUEST_PHONE_BUTTON = "📱 Share my phone number";
+
+export const UNTRUSTED_CONTACT =
+  'Please use the "Share my phone number" button below so we can verify your own Telegram account\'s number.';
+
+export const NEW_PROFILE_CREATED =
+  "We've created a new profile for you! Let's get started with a few questions.";
+
+export const PHONE_NOT_FOUND =
+  "We couldn't find an existing profile matching that phone number. Please contact our team so we can assist you.";
+
+export const PHONE_AMBIGUOUS =
+  "We found multiple matching profiles for this number. Please contact our team so we can resolve this safely.";
+
+export const IDENTITY_CONFLICT =
+  "This profile is already linked to another Telegram account, or your Telegram account is linked elsewhere. Please contact support.";
+
 export const ALREADY_COMPLETE = [
   "You're all set — I have everything I need.",
   "",

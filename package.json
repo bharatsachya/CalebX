@@ -19,7 +19,12 @@
     "lint": "echo 'No eslint configured yet'",
     "commit:validate": "bun run scripts/commit-validate.ts",
     "push:validate": "bun run scripts/push-validate.ts",
-    "prepare": "husky"
+    "deploy:azure": "bun run scripts/deploy-azure.ts",
+    "azure:stop": "bun run scripts/stop-azure.ts",
+    "azure:start": "bun run scripts/start-azure.ts",
+    "azure:destroy": "bun run scripts/destroy-azure.ts",
+    "prepare": "husky",
+    "import:images": "bun --cwd packages/directory-import import:images"
   },
   "lint-staged": {
     "**/*.{ts,tsx,js}": [

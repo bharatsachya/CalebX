@@ -61,7 +61,11 @@ async function main(): Promise<void> {
       "scripts/verify-channel-parity.ts",
     ]),
   );
-  results.push(runOptional("tests", "no test runner configured yet"));
+  results.push(
+    runStep("form verification", "bun", ["run", "scripts/verify-form.ts"]),
+  );
+  results.push(runStep("unit tests", "bun", ["test"]));
+
   summary(results);
   const failed = results.filter((r) => r.status === "fail");
   if (failed.length > 0) {
