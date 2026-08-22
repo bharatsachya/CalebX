@@ -10,7 +10,11 @@ import { normalizePhone } from "@calebx/channel";
 async function seed(): Promise<void> {
   const rawPhone = "7425077668";
   const normalizedPhone = normalizePhone(rawPhone);
+  if (!normalizedPhone) {
+    throw new Error(`Invalid phone number: ${rawPhone}`);
+  }
   const userId = `mock_user_${rawPhone}`;
+
   const now = new Date().toISOString();
 
   console.log(`Seeding mock user:`);
@@ -23,12 +27,12 @@ async function seed(): Promise<void> {
   // 1. Seed Contacts tab with phone number
   await contacts.set(userId, {
     userId,
-    updatedAt: now,
     answers: {
       phone: normalizedPhone,
       email: "mock.aarav@example.com",
     },
   });
+
   console.log(`✓ Seeded Contacts tab`);
 
   // 2. Seed Candidates tab with partial profile data
