@@ -19,7 +19,8 @@
     "lint": "echo 'No eslint configured yet'",
     "commit:validate": "bun run scripts/commit-validate.ts",
     "push:validate": "bun run scripts/push-validate.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "import:images": "bun --cwd packages/directory-import import:images"
   },
   "lint-staged": {
     "**/*.{ts,tsx,js}": [

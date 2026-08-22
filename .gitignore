@@ -28,3 +28,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 *.log
+
+# Tesseract language models, fetched on first `import:images` run (6.6MB).
+# Cached next to the package rather than committed.
+*.traineddata

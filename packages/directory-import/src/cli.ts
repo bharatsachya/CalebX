@@ -15,18 +15,11 @@
 
 import { SHEET_TABS, CANDIDATE_HEADERS, USER_ID_COLUMN } from "@calebx/form";
 import {
-  appendRows,
-  ensureTab,
-  getValues,
-  updateRow,
-  type Row,
-} from "@calebx/sheets";
-import {
   mapRow,
   EXTRA_CANDIDATE_COLUMNS,
-  type Cells,
   type MappedRow,
 } from "./candidate.ts";
+import { ensureHeader, upsert } from "./upsert.ts";
 import { parsePages } from "./parse.ts";
 import { readPdf } from "./pdf.ts";
 
@@ -96,62 +89,6 @@ async function main(): Promise<void> {
   );
 
   console.log("\nDone. Review the rows where needs_review = TRUE.");
-}
-
-/** Ensures every column in `wanted` exists; returns the tab's full header. */
-async function ensureHeader(
-  tab: string,
-  wanted: readonly string[],
-): Promise<string[]> {
-  await ensureTab(tab);
-  const existing = (await getValues(tab))[0] ?? [];
-  const merged = [...existing];
-  for (const col of wanted) if (!merged.includes(col)) merged.push(col);
-  if (merged.length !== existing.length) await updateRow(tab, 1, merged);
-  return merged;
-}
-
-/**
- * Writes `records` to a tab keyed by `user_id`.
- *
- * Existing ids are updated in place (merging over the current row so a hand-added
- * column survives); new ids are appended together in a single call to stay well
- * under the write quota.
- */
-async function upsert(
-  tab: string,
-  header: string[],
-  records: Cells[],
-): Promise<void> {
-  const rows = await getValues(tab);
-  const idCol = header.indexOf(USER_ID_COLUMN);
-  const rowNumberById = new Map<string, number>();
-  for (let i = 1; i < rows.length; i++) {
-    const id = rows[i]?.[idCol]?.trim();
-    if (id && !rowNumberById.has(id)) rowNumberById.set(id, i + 1);
-  }
-
-  const toAppend: Row[] = [];
-  let updated = 0;
-
-  for (const cells of records) {
-    const id = cells[USER_ID_COLUMN] ?? "";
-    const rowNumber = rowNumberById.get(id);
-    if (rowNumber === undefined) {
-      toAppend.push(header.map((h) => cells[h] ?? ""));
-    } else {
-      const existing = rows[rowNumber - 1] ?? [];
-      const row = header.map((h, i) => cells[h] ?? existing[i] ?? "");
-      await updateRow(tab, rowNumber, row);
-      updated++;
-    }
-  }
-
-  await appendRows(tab, toAppend);
-  console.log(
-    `  ${tab}: ${toAppend.length} added, ${updated} updated ` +
-      `(${records.length} total).`,
-  );
 }
 
 function printSample(rows: MappedRow[]): void {
