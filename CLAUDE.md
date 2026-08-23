@@ -362,91 +362,12 @@ timing analysis heuristics and degrade the bot's Contributor Quality Score (CQS)
 
 ---
 
-## 7. Infrastructure (docker-compose.yml)
+## 7. Infrastructure & Config
 
-```yaml
-services:
-  redis:
-    image: redis:7-alpine
-    ports: ["6379:6379"]
-    volumes: ["redis-data:/data"]
-    command: redis-server --appendonly yes
-
-  minio:
-    image: minio/minio
-    ports: ["9000:9000", "9001:9001"]
-    environment:
-      MINIO_ROOT_USER: calebx
-      MINIO_ROOT_PASSWORD: calebx-local-dev
-    volumes: ["minio-data:/data"]
-    command: server /data --console-address ":9001"
-
-  helixdb:
-    image: ghcr.io/helixdb/enterprise-dev:latest
-    ports: ["6969:6969"]
-    environment:
-      S3_BUCKET: calebx-helix
-      AWS_ENDPOINT: http://minio:9000
-      AWS_ACCESS_KEY_ID: calebx
-      AWS_SECRET_ACCESS_KEY: calebx-local-dev
-      AWS_ALLOW_HTTP: "true"
-      PATH_TO_QUERIES: /app/queries.json
-    volumes:
-      - ./db/queries.json:/app/queries.json:ro
-    depends_on: [minio]
-    command: ["helix", "start", "--disk"] # persistent mode, not in-memory
-
-  ollama:
-    image: ollama/ollama
-    ports: ["11434:11434"]
-    volumes: ["ollama-models:/root/.ollama"]
-    # pull models on first run:
-    # docker exec calebx-ollama ollama pull llama3
-    # docker exec calebx-ollama ollama pull nomic-embed-text
-
-volumes:
-  redis-data:
-  minio-data:
-  ollama-models:
-```
-
-**Important:** HelixDB defaults to in-memory mode without `--disk`. In-memory mode
-wipes all PersonaChunks on container restart. Always use `--disk` with MinIO backing
-in any environment beyond unit tests.
-
----
-
-## 8. Environment Variables (config/schema.ts)
-
-All env vars are validated at boot using Zod. If any required var is missing or
-mistyped, the process exits with a clear error before doing anything else.
-
-```typescript
-// packages/config/schema.ts
-export const ConfigSchema = z.object({
-  // Telegram
-  TELEGRAM_BOT_TOKEN: z.string().min(20),
-
-  // HelixDB
-  HELIX_URL: z.string().url().default("http://localhost:6969"),
-
-  // Redis / BullMQ
-  REDIS_URL: z.string().url().default("redis://localhost:6379"),
-
-  // Ollama
-  OLLAMA_URL: z.string().url().default("http://localhost:11434"),
-  OLLAMA_CHAT_MODEL: z.string().default("llama3"),
-  OLLAMA_EMBED_MODEL: z.string().default("nomic-embed-text"),
-
-  // MinIO (used by HelixDB, not directly by app)
-  MINIO_ENDPOINT: z.string().url().default("http://localhost:9000"),
-
-  // Tuning
-  PERSONA_CHUNK_THRESHOLD: z.coerce.number().default(0.75),
-  MAX_SESSION_TURNS: z.coerce.number().default(20),
-  DISPATCH_JITTER_MAX_MS: z.coerce.number().default(15),
-});
-```
+Docker-compose services (Redis, MinIO, HelixDB, Ollama) and the Zod env var schema
+live in the **calebx-infra-config** skill. Load-bearing invariant: HelixDB needs the
+`--disk` flag + MinIO backing anywhere beyond unit tests, or PersonaChunks are wiped
+on restart. Env vars are validated at boot with Zod; a missing/mistyped var exits early.
 
 ---
 
@@ -479,85 +400,9 @@ graceful fallback message. The user should never see a silent failure.
 
 ## 10. Development Phases & Ownership Split
 
-### Phase 1 — Foundation (both devs, 1–2 days)
-
-Owner A:
-
-- Initialize Bun workspace with `strict: true`, `noUncheckedIndexedAccess: true`, no `any`
-- Create `types/`, `errors/`, `logger/`, `config/` packages
-- Write `docker-compose.yml`, validate all services start cleanly
-- Write `db/schema.hx`, run `helix compile` and confirm zero errors
-
-Owner B:
-
-- Set up Husky hooks (pre-commit: prettier + gitleaks + README check; pre-push: tsc + lint)
-- Scaffold `core/` with entity types and port interfaces (no implementations yet)
-- Write `db/queries.ts` stub with `defineQueries` DSL — no logic, just the shape
-- Confirm `helix start --disk` connects to MinIO and survives a restart
-
-Exit criteria: `docker compose up` starts all services. `bun run build` succeeds across
-all packages. `helix compile db/schema.hx` outputs zero errors.
-
----
-
-### Phase 2 — Ingestion & Consent (2–3 days)
-
-Owner A (Telegram boundary):
-
-- Build GramIO bot with consent middleware as the first and only middleware
-- Implement `/start` → privacy notice → inline keyboard → write `consent_granted: true`
-- Implement `/forget` → delete all PersonaChunks for this user
-- On consent, push message to `ingest-queue` and send an acknowledgment reply
-
-Owner B (Ingestion worker):
-
-- Build `ingest-queue` worker: receive message → call Ollama Stage 1 extraction
-  → call FastEmbed → write PersonaChunk to HelixDB
-- Write integration test: send a test message, confirm PersonaChunk appears in DB
-- Set up Redis session store: read/write last 20 turns per user
-
-Exit criteria: User sends a message. After consent, a PersonaChunk appears in
-HelixDB with a non-null embedding. Raw message text is not stored anywhere on disk.
-
----
-
-### Phase 3 — Persona & Recommendations (3–4 days)
-
-Owner A (GraphRAG retrieval):
-
-- Implement `retrieval-queue` worker with the 7-step GraphRAG pattern from §3.3
-- Build the RRF fusion ranker
-- Write the geo-radius post-filter (lat/lng from PersonaChunks → Place node proximity)
-
-Owner B (Conversational LLM layer):
-
-- Implement Ollama Stage 2 (conversation) call with persona summary injection
-- Build the persona summarizer background job (every 5 turns → new PersonaChunks)
-- Implement the `InsufficientContextError` path: when fewer than 3 chunks score > 0.75,
-  keep conversing without surfacing a recommendation
-
-Exit criteria: User has a 10-turn conversation about interests. CALEBX surfaces
-one relevant Group or Person recommendation. The recommendation makes sense given
-the conversation.
-
----
-
-### Phase 4 — Dispatch & Hardening (2 days)
-
-Owner A (dispatch worker):
-
-- Build `dispatch-queue` worker with rate-limit enforcement and jitter
-- Implement `retry_after` handling (re-queue on 429, do not retry inline)
-- Load test: simulate 50 concurrent users, confirm no 429 errors escape
-
-Owner B (resilience):
-
-- Add dead-letter queue handling and user-facing fallback messages
-- Add structured logging with correlation IDs across all three queues
-- Write end-to-end test: full message → persona → recommendation → dispatch flow
-
-Exit criteria: Bot handles 50 concurrent users without a Telegram API ban.
-All failures produce a graceful user-visible message within 30 seconds.
+The four-phase build plan (Foundation → Ingestion & Consent → Persona &
+Recommendations → Dispatch & Hardening), with per-phase owner split, tasks, and exit
+criteria, lives in the **calebx-dev-phases** skill.
 
 ---
 
@@ -610,14 +455,9 @@ When generating code for this project:
 
 ## 12. Key Risks & Mitigations
 
-| Risk                                  | Likelihood          | Impact                 | Mitigation                                                                   |
-| ------------------------------------- | ------------------- | ---------------------- | ---------------------------------------------------------------------------- |
-| Telegram HTTP 429 cascade             | High (early dev)    | Service outage         | dispatch-queue concurrency=1, jitter, retry_after                            |
-| HelixDB type mismatch (E622)          | Medium              | Dev time loss          | Always use `I64` for IDs, `helix compile` in CI                              |
-| Persona drift (old chunks dominating) | Medium              | Bad recommendations    | `decay_weight` × recency score in RRF ranker                                 |
-| LLM extraction hallucinating entities | Medium              | Junk in persona graph  | Low temperature (0.1) + JSON schema validation on extraction output          |
-| MinIO data loss on restart            | Low (if configured) | All persona data wiped | Always use `--disk` flag. Never use in-memory in staging+                    |
-| Telegram platform ban (ISP-level)     | Low                 | Full service loss      | Architect DB layer to be platform-agnostic; Discord adapter ready in Phase 5 |
+The risk register (Telegram 429 cascade, HelixDB E622, persona drift, LLM
+hallucination, MinIO data loss, platform ban) and its mitigations live in the
+**calebx-risks** skill.
 
 ---
 
