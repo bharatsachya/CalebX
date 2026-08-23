@@ -116,6 +116,7 @@ export const CANDIDATE_FIELDS: readonly FormField[] = [
     table: "candidates",
     kind: "text",
     prompt: "Which community do you belong to?",
+    hint: "For example: Garg (Mangal) — community name, gotra in brackets",
     required: false,
   },
   {

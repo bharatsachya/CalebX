@@ -39,6 +39,28 @@ export const WELCOME = [
   `Optional questions can be passed with ${COMMANDS.skip}.`,
 ].join("\n");
 
+/**
+ * This bot's own consent copy — deliberately not `@calebx/channel`'s. That
+ * copy describes CALEBX's persona engine ("I get to know you through our
+ * conversation... suggest people, places, and communities"), which is the
+ * wrong pitch for a marriage-matchmaking questionnaire. Same principle as
+ * `whatsapp-bot/src/copy.ts`: no sibling channel to stay in parity with, so
+ * the framing lives here instead of being borrowed from a different product.
+ */
+export const NEEDS_CONSENT_NUDGE =
+  "Before we start, I need your okay to store what you share.";
+
+export const PRIVACY_NOTICE = [
+  "Hi — I'll take you through a short questionnaire so a matchmaker can put together suggestions for you.",
+  "",
+  "Before we start:",
+  "• I store what you tell me — biodata, family details, contact info, and what you're looking for — so a matchmaker can review it.",
+  "• Your contact details are kept separate and are never shown to anyone you're matched with. They're shared only if both sides are interested, and only by hand.",
+  `• You're in control: send ${COMMANDS.forget} anytime to erase everything and revoke this.`,
+  "",
+  "Tap below to continue.",
+].join("\n");
+
 export const RESUMING = "Picking up where we left off.";
 
 export const RESUMING_PARTIAL =
@@ -98,9 +120,6 @@ export function question(
     `<b>${escapeHtml(field.prompt)}</b>`,
   ];
   if (field.hint) lines.push(`<i>${escapeHtml(field.hint)}</i>`);
-  if (!field.required) {
-    lines.push(`<i>Optional — ${COMMANDS.skip} to pass.</i>`);
-  }
   return lines.join("\n");
 }
 
