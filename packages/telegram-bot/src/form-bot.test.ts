@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { describe, expect, it, beforeEach } from "bun:test";
 import {
   type CandidateProfile,
