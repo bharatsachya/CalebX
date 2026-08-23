@@ -29,12 +29,17 @@ export const GENDER_OPTIONS: readonly ChoiceOption[] = [
 ] as const;
 
 /**
- * Mirrors `MaritalStatus` — minus `married`.
+ * Mirrors `MaritalStatus` — minus `married` and `single`.
  *
  * `002_candidates.sql` has a CHECK constraint rejecting a married candidate and
  * `packages/db/src/candidates.repo.ts:9` mirrors it at the repository layer.
  * Not offering the option is the first line of defence; `validate.ts` rejects it
  * if someone types it anyway.
+ *
+ * `single` stays a valid value in the `marital_status` enum
+ * (`001_extensions_and_enums.sql`) but isn't offered here — it's redundant
+ * with `never_married` for this form's purposes, and offering both just makes
+ * the same fact answerable two ways.
  */
 export const MARITAL_STATUS_OPTIONS: readonly ChoiceOption[] = [
   {
@@ -42,7 +47,6 @@ export const MARITAL_STATUS_OPTIONS: readonly ChoiceOption[] = [
     label: "Never married",
     value: "never_married",
   },
-  { id: "form:marital_status:single", label: "Single", value: "single" },
   { id: "form:marital_status:divorced", label: "Divorced", value: "divorced" },
   { id: "form:marital_status:widowed", label: "Widowed", value: "widowed" },
 ] as const;

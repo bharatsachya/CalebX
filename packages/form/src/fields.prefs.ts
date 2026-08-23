@@ -36,7 +36,7 @@ export const PREFERENCE_FIELDS: readonly FormField[] = [
     table: "partner_prefs",
     kind: "text",
     prompt: "Any community preference?",
-    hint: "Type 'any' if it doesn't matter",
+    hint: "For example: Garg (Mangal) — community name, gotra in brackets. Type 'any' if it doesn't matter",
     required: false,
   },
   {
