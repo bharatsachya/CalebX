@@ -104,10 +104,27 @@ while (!isComplete(answers) && guard++ < 200) {
   answers = result.answers;
 }
 
+/**
+ * Answering an `integer` field with its `field.min` here means brothers and
+ * sisters are both answered "0" — which auto-derives brothers_married and
+ * sisters_married to "0" too (form.fsm.ts's `deriveAnswers`), so this
+ * walkthrough never asks those two. That is the intended behaviour: 0
+ * siblings has only one honest "how many are married" answer.
+ */
+const AUTO_DERIVED_FIELDS = ["brothers_married", "sisters_married"];
+
 check(
-  "every question was asked",
-  asked.length === FORM_FIELDS.length,
-  `${asked.length}/${FORM_FIELDS.length}`,
+  "every question was asked, except the ones auto-derived from a zero sibling count",
+  asked.length === FORM_FIELDS.length - AUTO_DERIVED_FIELDS.length,
+  `${asked.length}/${FORM_FIELDS.length - AUTO_DERIVED_FIELDS.length}`,
+);
+check(
+  "auto-derived fields were never individually asked",
+  AUTO_DERIVED_FIELDS.every((id) => !asked.includes(id)),
+);
+check(
+  "auto-derived fields still ended up answered as 0",
+  AUTO_DERIVED_FIELDS.every((id) => answers[id] === "0"),
 );
 check("form reports complete", isComplete(answers));
 check("no question asked twice", new Set(asked).size === asked.length);

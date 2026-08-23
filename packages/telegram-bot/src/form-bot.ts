@@ -12,7 +12,7 @@
  */
 
 import { Bot } from "gramio";
-import { FORM_FIELDS, SHEET_TABS } from "@calebx/form";
+import { FORM_FIELDS, SHEET_TABS, copy as formCopy } from "@calebx/form";
 import {
   SheetsCandidateStore,
   SheetsConsentStore,
@@ -35,7 +35,11 @@ const bot = new Bot(config.telegramBotToken);
 
 // 1) Consent gate FIRST — nothing reaches the sheet before agreement.
 //    /start and /forget pass through; everything else gets the notice.
-registerConsentGate(bot, consent);
+registerConsentGate(
+  bot,
+  consent,
+  `${formCopy.NEEDS_CONSENT_NUDGE}\n\n${formCopy.PRIVACY_NOTICE}`,
+);
 
 // 2) The form and identity linking.
 registerFormHandlers(bot, {

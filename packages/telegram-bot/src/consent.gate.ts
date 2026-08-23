@@ -22,8 +22,17 @@ function leadingCommand(text: string): string {
  *
  * Because this is the single chokepoint, every future handler that ingests
  * message content (the persona pipeline) is protected automatically.
+ *
+ * `noticeText` defaults to CALEBX's own persona-engine framing (`telegram.ts`,
+ * the agent bot). `form-bot.ts` passes its own — the two bots are different
+ * products sharing this one gate, and CALEBX's "I get to know you through our
+ * conversation" pitch is wrong for a marriage-matchmaking questionnaire.
  */
-export function registerConsentGate(bot: Bot, consent: ConsentStore): void {
+export function registerConsentGate(
+  bot: Bot,
+  consent: ConsentStore,
+  noticeText: string = `${copy.NEEDS_CONSENT_NUDGE}\n\n${copy.privacyNotice(copy.TELEGRAM_HINTS)}`,
+): void {
   bot.use(async (context, next) => {
     // Only messages carry content we'd process; narrow to the message context.
     if (!context.is("message")) return next();
@@ -39,9 +48,6 @@ export function registerConsentGate(bot: Bot, consent: ConsentStore): void {
     }
 
     // Not consented: re-prompt and STOP (no next()) → message is never ingested.
-    await context.send(
-      `${copy.NEEDS_CONSENT_NUDGE}\n\n${copy.privacyNotice(copy.TELEGRAM_HINTS)}`,
-      { reply_markup: consentKeyboard },
-    );
+    await context.send(noticeText, { reply_markup: consentKeyboard });
   });
 }
