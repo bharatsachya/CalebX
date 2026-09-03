@@ -96,7 +96,7 @@ stores.
 **Still not built:** a real Group catalog beyond what an admin registers; a WhatsApp dispatch
 worker; a Discord adapter; the web dashboard.
 
-805 unit and integration tests cover it, none of which need a database, a model, or a
+817 unit and integration tests cover it, none of which need a database, a model, or a
 network — see §14.
 
 ---
@@ -517,7 +517,7 @@ not as a status report.
 
 ## 14. Tests
 
-`bun test` — 805 tests, and **none of them need a database, a model, or a network.** That is
+`bun test` — 817 tests, and **none of them need a database, a model, or a network.** That is
 deliberate: the parts worth testing are pure or take injected ports, so a fake can drive
 them. `MemoryGraphStore` runs the same traversals and the same authorization checks as the
 Neo4j store, `FakeSqlExecutor` records SQL so a missing owner predicate fails a test, and

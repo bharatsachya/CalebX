@@ -1,24 +1,13 @@
 <div align="center">
 
-```
-  ██████╗ █████╗ ██╗     ███████╗██████╗ ██╗  ██╗
- ██╔════╝██╔══██╗██║     ██╔════╝██╔══██╗╚██╗██╔╝
- ██║     ███████║██║     █████╗  ██████╔╝ ╚███╔╝
- ██║     ██╔══██║██║     ██╔══╝  ██╔══██╗ ██╔██╗
- ╚██████╗██║  ██║███████╗███████╗██████╔╝██╔╝ ██╗
-  ╚═════╝╚═╝  ╚═╝╚══════╝╚══════╝╚═════╝ ╚═╝  ╚═╝
-```
-
-**Conversational Persona Engine**
-
-_Talk naturally. CALEBX learns who you are, then connects you with people, places, and communities that fit._
+<img src="docs/assets/calebx-card.png" width="880" alt="CALEBX — it never asks what you're into, it listens until it knows. A chat bot on Telegram and WhatsApp that builds a persona from conversation, then finds your people. Beside the wordmark, a user message reading &quot;product, but I write code when I need to. ex-Swiggy&quot; feeds into a node labelled tg:1001, which branches to three persona chunks: works in product, builds side projects, is around Bangalore — extracted after the reply.">
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Bun](https://img.shields.io/badge/Runtime-Bun-fbf0df?style=flat-square&logo=bun&logoColor=black)](https://bun.sh/)
 [![GramIO](https://img.shields.io/badge/Bot-GramIO-26A5E4?style=flat-square&logo=telegram&logoColor=white)](https://gramio.dev/)
 [![Neo4j](https://img.shields.io/badge/Graph-Neo4j-018BFF?style=flat-square&logo=neo4j&logoColor=white)](https://neo4j.com/)
 [![Postgres](https://img.shields.io/badge/Relational-Postgres%20%2B%20pgvector-336791?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
-[![Tests](https://img.shields.io/badge/tests-805%20passing-22c55e?style=flat-square)](#verification)
+[![Tests](https://img.shields.io/badge/tests-817%20passing-22c55e?style=flat-square)](#verification)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
 
 </div>
@@ -381,7 +370,7 @@ Each package declares what it needs through `env("<scope>")`, so a process is ne
 ## Verification
 
 ```bash
-bun test           # 805 tests
+bun test           # 817 tests
 bun run typecheck  # tsc --noEmit across every package
 ```
 
