@@ -10,17 +10,18 @@
   },
   "dependencies": {
     "@calebx/agent": "*",
+    "@calebx/authz": "*",
     "@calebx/channel": "*",
     "@calebx/config": "*",
     "@calebx/core": "*",
     "@calebx/db": "*",
     "@calebx/form": "*",
+    "@calebx/graph": "*",
     "@calebx/logger": "*",
-    "@calebx/sheets": "*",
-    "gramio": "^0.12.0",
     "@calebx/queue": "*",
-    "@calebx/authz": "*",
-    "@calebx/trace": "*"
+    "@calebx/sheets": "*",
+    "@calebx/trace": "*",
+    "gramio": "^0.12.0"
   },
   "peerDependencies": {
     "typescript": "^5.4.5"

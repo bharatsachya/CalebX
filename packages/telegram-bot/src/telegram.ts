@@ -22,6 +22,7 @@ import {
   resumeOnboarding,
 } from "./onboarding.gate.ts";
 import { registerAgentHandlers } from "./agent.gate.ts";
+import { registerAdminHandlers } from "./admin.gate.ts";
 import { consentKeyboard, forgetConfirmKeyboard } from "./keyboards.ts";
 
 const HINTS = copy.TELEGRAM_HINTS;
@@ -103,6 +104,12 @@ registerAgentHandlers(bot, {
     await consent.delete(userId);
     await onboarding.delete(userId);
   },
+});
+
+// 8) Admin commands — /register_group, run inside a group with the bot as admin.
+registerAdminHandlers(bot, {
+  agent: agentDeps,
+  adminChatId: config.adminChatId,
 });
 
 bot.onStart(({ info }) =>
