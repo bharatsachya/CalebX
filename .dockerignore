@@ -13,3 +13,7 @@ coverage
 dist
 mastheads.png
 Screenshot*.png
+# Docs and the README banner are not needed in the image.
+docs
+*.md
+!packages/**/README.md

@@ -1,35 +1,31 @@
-# Production Dockerfile for CalebX Telegram Form Bot on Bun
-FROM oven/bun:1.3-slim AS base
+# Production image for the CalebX Telegram form bot.
+#
+# Two stages so that `bun install` is cached against the *manifests* only. The
+# previous version listed every workspace package.json by hand, which meant
+# adding a package silently broke the build: bun could not resolve the new
+# workspace member, fell through to the npm registry, and 404'd. Nothing here
+# needs editing when a package is added.
 
+FROM oven/bun:1.3-slim AS manifests
 WORKDIR /app
+COPY package.json bun.lock ./
+COPY packages ./packages
+# Keep the manifests, drop everything else. The install layer must not be
+# invalidated by a source edit, and `COPY --from` is content-hashed — so as long
+# as no package.json changed, the install below stays cached.
+RUN find packages -mindepth 2 -maxdepth 2 ! -name package.json -exec rm -rf {} +
 
-# Production environment
+FROM oven/bun:1.3-slim AS base
+WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy workspace package definitions and lockfile for caching layer
-COPY package.json bun.lock ./
-COPY packages/agent/package.json ./packages/agent/
-COPY packages/channel/package.json ./packages/channel/
-COPY packages/config/package.json ./packages/config/
-COPY packages/core/package.json ./packages/core/
-COPY packages/db/package.json ./packages/db/
-COPY packages/directory-import/package.json ./packages/directory-import/
-COPY packages/errors/package.json ./packages/errors/
-COPY packages/form/package.json ./packages/form/
-COPY packages/logger/package.json ./packages/logger/
-COPY packages/sheets/package.json ./packages/sheets/
-COPY packages/telegram-bot/package.json ./packages/telegram-bot/
-COPY packages/types/package.json ./packages/types/
-COPY packages/whatsapp-bot/package.json ./packages/whatsapp-bot/
-
+COPY --from=manifests /app/ ./
 RUN bun install --production --ignore-scripts
 
-
-# Copy source code and configurations
+# Source last: this is the layer that actually changes between deploys.
 COPY tsconfig.json ./
 COPY packages/ ./packages/
 
 USER bun
 
-# Default entry point for the form bot
 CMD ["bun", "run", "bot:form"]
