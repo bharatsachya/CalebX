@@ -1,0 +1,26 @@
+{
+  "name": "@calebx/community",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@calebx/authz": "*",
+    "@calebx/config": "*",
+    "@calebx/core": "*",
+    "@calebx/db": "*",
+    "@calebx/embed": "*",
+    "@calebx/errors": "*",
+    "@calebx/graph": "*",
+    "@calebx/trace": "*",
+    "graphology": "^0.26.0",
+    "graphology-communities-louvain": "^2.0.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

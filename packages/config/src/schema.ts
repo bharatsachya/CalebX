@@ -16,22 +16,23 @@ export const ConfigSchema = z.object({
     })
     .min(20, "TELEGRAM_BOT_TOKEN must be at least 20 characters long"),
 
-  // HelixDB
-  HELIX_URL: z.string().url().default("http://localhost:6969"),
-
-  // Redis / BullMQ
+  // Redis / BullMQ. Every queue and the mode cache share this instance.
   REDIS_URL: z.string().url().default("redis://localhost:6379"),
 
-  // Ollama
-  OLLAMA_URL: z.string().url().default("http://localhost:11434"),
-  OLLAMA_CHAT_MODEL: z.string().default("llama3"),
-  OLLAMA_EMBED_MODEL: z.string().default("nomic-embed-text"),
-
-  // Tuning Parameters
-  PERSONA_CHUNK_THRESHOLD: z.coerce.number().default(0.75),
-  MAX_SESSION_TURNS: z.coerce.number().default(20),
+  // Dispatch tuning. The jitter floor is not configurable — see
+  // packages/queue/src/limiter.ts for why perfectly uniform sends are a problem.
   DISPATCH_JITTER_MAX_MS: z.coerce.number().default(15),
+  MAX_SESSION_TURNS: z.coerce.number().default(20),
 });
+
+/**
+ * Removed on 2026-09-03 with the agent-engine build: `HELIX_URL`,
+ * `OLLAMA_URL`, `OLLAMA_CHAT_MODEL`, `OLLAMA_EMBED_MODEL`,
+ * `PERSONA_CHUNK_THRESHOLD`. None was read by any file — HelixDB was never run
+ * and inference went to OpenRouter instead. Anything a package needs now is
+ * declared by that package through `env("<scope>")`, so a variable cannot be
+ * required by a process that has no use for it.
+ */
 
 export type Config = z.infer<typeof ConfigSchema>;
 

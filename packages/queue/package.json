@@ -1,0 +1,32 @@
+{
+  "name": "@calebx/queue",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test",
+    "worker:agent": "bun run src/workers/agent.worker.ts",
+    "worker:ingest": "bun run src/workers/ingest.worker.ts",
+    "worker:dispatch": "bun run src/workers/dispatch.worker.ts"
+  },
+  "dependencies": {
+    "@calebx/agent": "*",
+    "@calebx/authz": "*",
+    "@calebx/config": "*",
+    "@calebx/core": "*",
+    "@calebx/db": "*",
+    "@calebx/embed": "*",
+    "@calebx/errors": "*",
+    "@calebx/graph": "*",
+    "@calebx/trace": "*",
+    "bullmq": "^6.3.4",
+    "ioredis": "^6.0.0",
+    "@calebx/community": "*",
+    "@calebx/channel": "*"
+  },
+  "peerDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

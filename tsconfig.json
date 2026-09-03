@@ -18,7 +18,14 @@
       "@calebx/agent": ["./packages/agent/src/index.ts"],
       "@calebx/channel": ["./packages/channel/src/index.ts"],
       "@calebx/form": ["./packages/form/src/index.ts"],
-      "@calebx/sheets": ["./packages/sheets/src/index.ts"]
+      "@calebx/sheets": ["./packages/sheets/src/index.ts"],
+      "@calebx/trace": ["./packages/trace/src/index.ts"],
+      "@calebx/authz": ["./packages/authz/src/index.ts"],
+      "@calebx/graph": ["./packages/graph/src/index.ts"],
+      "@calebx/embed": ["./packages/embed/src/index.ts"],
+      "@calebx/queue": ["./packages/queue/src/index.ts"],
+      "@calebx/matchmaking": ["./packages/matchmaking/src/index.ts"],
+      "@calebx/community": ["./packages/community/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "**/dist"]

@@ -9,7 +9,11 @@
   },
   "dependencies": {
     "@calebx/config": "*",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "@calebx/authz": "*",
+    "@calebx/core": "*",
+    "@calebx/embed": "*",
+    "@calebx/errors": "*"
   },
   "devDependencies": {
     "@types/pg": "^8.11.0"

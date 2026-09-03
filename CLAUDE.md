@@ -1,8 +1,12 @@
 # CLAUDE.md — CALEBX Project Intelligence
 
-> This file is the authoritative source of truth for AI-assisted development on CALEBX.
-> Read this entire file before writing a single line of code. Every architectural decision
-> here exists for a specific reason. Do not deviate without explicit instruction.
+> This file describes the repo **as it actually exists today**, verified against the
+> code and the test suite (last checked 2026-09-03, after the agent-engine build).
+> Earlier versions described an aspirational HelixDB/BullMQ/Ollama architecture that was
+> never built — see §8. The Neo4j persona graph that **CLAUDE1.md** proposed is now built,
+> alongside a two-subagent router, an authorization layer, agent tracing, and the queue
+> layer. `implementation_plan.md` is the design of record; `assumptions.md` lists every
+> decision taken without an explicit answer.
 
 ---
 
@@ -10,10 +14,11 @@
 
 CALEBX is a **conversational persona engine**, not a search tool.
 
-The original intent: a user opens Telegram and talks to CALEBX like they would talk
-to ChatGPT — naturally, messily, over multiple sessions. From that ongoing conversation,
-CALEBX builds a living persona of who this person is: their vibe, interests, location
-habits, frustrations, the kind of people they want to meet. Then it surfaces:
+The original intent: a user opens Telegram (or WhatsApp) and talks to CALEBX like they
+would talk to ChatGPT — naturally, messily, over multiple sessions. From that ongoing
+conversation, CALEBX builds a living persona of who this person is: their vibe,
+interests, location habits, frustrations, the kind of people they want to meet. Then it
+surfaces:
 
 - **Groups** that match their personality
 - **People** they should know (2nd-degree social graph)
@@ -21,33 +26,78 @@ habits, frustrations, the kind of people they want to meet. Then it surfaces:
 
 No forms. No onboarding surveys. No profile pages. The conversation IS the product.
 
-Every technical decision below serves this idea. If a piece of infrastructure
-does not ultimately make the conversational experience richer or safer, question
-whether it belongs here.
+**This is still the vision, not the current feature set.** What's actually built today
+is the conversational half (persona memory via mem0) — the recommendation half
+(Groups/People/Places) has never been implemented. See §1.
 
 ---
 
-## 1. What You Are Building
+## 0.1 Two Products Share This Monorepo
+
+This is the single most important fact this file needs to convey, because it wasn't
+true when the project started and every package now has to be read with it in mind.
+
+- **CALEBX** — the conversational persona bot described above. `packages/agent`,
+  `packages/telegram-bot` (the `telegram.ts` entry point), `packages/whatsapp-bot`,
+  `packages/channel`.
+- **A separate WhatsApp matchmaking product** — a Postgres-backed candidate/matching
+  system with its own consent flow, onboarding form, and admin-curated matches. Not
+  CALEBX, just sharing infrastructure and this repo. `packages/db` (Postgres),
+  `packages/form`, `packages/sheets`, `packages/directory-import`, and the
+  `form-bot.ts` entry point inside `packages/telegram-bot` (run side-by-side with
+  CALEBX's own `telegram.ts` deliberately, to A/B a scripted-form UX against the
+  open-conversation UX).
+
+Both products share `packages/core`'s `IUserRepository` (implemented once, in
+`packages/db`, against Postgres) and `packages/config`/`packages/errors`. They do not
+share persona storage, consent copy, or domain logic. When you're asked to work on
+"CALEBX," confirm which of the two you actually mean — the matchmaking product's own
+README and rules.md still say "CalebX" too.
+
+---
+
+## 1. What's Actually Built
+
+The real per-message flow today, for both `telegram.ts` and `whatsapp.ts`:
 
 ```
 User sends message
         │
         ▼
-CALEBX responds like a conversational AI (think: curious friend, not a bot menu)
+Consent gate (file-backed) — blocks until /start → Accept. Unconsented text is
+never queued and never logged.
         │
         ▼
-In the background, CALEBX is:
-  - Extracting entities, intents, sentiments from every turn
-  - Building and updating a persona graph for this user in HelixDB
-  - Running GraphRAG: finding people/groups/places that match this persona
+Onboarding FSM (file-backed) — name/age/purpose, one question at a time
         │
         ▼
-When the moment is right (or user asks), CALEBX surfaces a recommendation
+runTurn(deps, {userId, text, channel, command})  — packages/agent:
+  1. agent_users.ensure()                → mode state (Postgres)
+  2. if unassigned → classifyMode()      → master router, temp 0.1, one word
+  3. mem0 search, keyed <userId>#<mode>  → recalled context
+  4. subagent tool loop (max 4 rounds)   → matchmaker OR community tools
+     …or the deterministic /recommendation path when one is asked for
+  5. finalizeReply()                     → strips internals talk, one question max
+  6. mem0 add, same namespaced key
+        │
+        ▼
+Reply sent — inline through the SendPacer, or via the dispatch queue
+        │
+        ▼
+ingest job (background, after the reply): extraction → FastEmbed → PersonaChunks
 ```
 
-The persona is **never complete**. It evolves every conversation. A user who talked
-about hiking in January and now talks about cafes in April — CALEBX holds both,
-weights recency, and understands the person is multi-dimensional.
+**Built and tested:** the master intent router and `/switch`; two domain packages with their
+own tools and their own database; the Neo4j persona graph with vector search; pgvector
+candidate search; an authorization layer gating every read and every query; agent tracing
+with a CLI viewer; BullMQ queues with a rate-limited dispatch path; `/forget` across all five
+stores.
+
+**Still not built:** a real Group catalog beyond what an admin registers; a WhatsApp dispatch
+worker; a Discord adapter; the web dashboard.
+
+805 unit and integration tests cover it, none of which need a database, a model, or a
+network — see §14.
 
 ---
 
@@ -55,421 +105,447 @@ weights recency, and understands the person is multi-dimensional.
 
 ```
 CalebX/
-├── CLAUDE.md                    ← you are here
-├── rules/
-│   └── rules.md                 ← coding conventions (always read before contributing)
+├── CLAUDE.md                    ← this file
+├── CLAUDE1.md                   ← proposed Neo4j persona-graph design (not built)
+├── rules/rules.md               ← coding conventions
 ├── packages/
-│   ├── types/                   ← shared TypeScript types, enums, branded types
-│   ├── errors/                  ← typed error hierarchy (never throw raw Error)
-│   ├── logger/                  ← structured JSON logger (Pino), no console.log
-│   ├── config/                  ← environment variable schema (Zod), validated at boot
-│   ├── core/                    ← DOMAIN ONLY. zero infrastructure imports.
-│   │   ├── entities/            ←   User, Persona, Intent, Place, Group, Recommendation
-│   │   ├── use-cases/           ←   ParseIntent, UpdatePersona, FindMatches, RankResults
-│   │   └── ports/               ←   IPersonaStore, IVectorSearch, IGraphTraversal, ILLM
-│   ├── db/                      ← HelixDB adapter. implements core ports.
-│   │   ├── schema.hx            ←   HelixQL schema (nodes, edges, vectors)
-│   │   ├── queries.ts           ←   compiled AST query bundles
-│   │   └── helix.adapter.ts     ←   IPersonaStore + IVectorSearch + IGraphTraversal impl
-│   ├── inference/               ← LLM + embedding adapter. implements ILLM port.
-│   │   ├── ollama.client.ts     ←   Ollama HTTP wrapper (conversation + extraction)
-│   │   └── fastembed.client.ts  ←   local embedding generation
-│   ├── queue/                   ← BullMQ setup, job definitions, typed payloads
-│   │   ├── jobs/
-│   │   │   ├── ingest.job.ts    ←   chunk → embed → upsert persona
-│   │   │   ├── retrieval.job.ts ←   query persona → GraphRAG → rank
-│   │   │   └── dispatch.job.ts  ←   throttled Telegram outbound
-│   │   └── workers/             ←   worker process entry points
-│   └── telegram-bot/            ← GramIO adapter. thin boundary only.
-│       ├── handlers/            ←   message, /start, callback handlers
-│       ├── middleware/          ←   consent gate, rate-guard, payload validator
-│       └── bot.ts               ←   wires ports → adapters, starts polling
-├── docker-compose.yml           ← Redis, MinIO, HelixDB, Ollama
-├── helix.toml                   ← HelixDB project config (port 6969 default)
+│   ├── types/                   ← DEAD CODE. Duplicates the original HelixDB-era
+│   │                               User/Place/Group/PersonaChunk shapes. Not imported
+│   │                               by anything except its own package.json/tsconfig
+│   │                               path alias. Don't add to it; `core/` is where
+│   │                               entities actually live now.
+│   ├── errors/                  ← Typed error hierarchy (BaseCalebxError → ...).
+│   │                               Defined but NOT thrown or caught anywhere in the
+│   │                               codebase today — actual error handling is ad-hoc
+│   │                               try/catch + console.error. Real, but aspirational
+│   │                               in practice; treat "use the typed hierarchy" as a
+│   │                               direction to move in, not a rule already followed.
+│   ├── logger/                  ← Pino JSON logger. Used in exactly one file
+│   │                               (telegram-bot/src/observability.ts). console.log/
+│   │                               error/warn is the actual norm across telegram-bot,
+│   │                               whatsapp-bot, config, db, sheets, directory-import.
+│   ├── config/                  ← Zod env schema, validated at boot via loadConfig().
+│   │                               Still declares HELIX_URL, REDIS_URL, OLLAMA_URL,
+│   │                               OLLAMA_CHAT_MODEL, OLLAMA_EMBED_MODEL — none of
+│   │                               these are read by any other file in the repo.
+│   ├── core/                    ← DOMAIN ONLY, zero infra imports. Today this is just
+│   │   └── src/index.ts             `User { id?, userId }` and `IUserRepository
+│   │                               { createUser, getUser }`. The richer entity/port
+│   │                               set the original design described (Persona, Intent,
+│   │                               Place, Group, Recommendation, IPersonaStore,
+│   │                               IVectorSearch, IGraphTraversal) was never added.
+│   ├── db/                      ← Postgres. Two jobs in one package:
+│   │   │                           (1) `PostgresUserRepository` implementing
+│   │   │                           `IUserRepository` — the only thing CALEBX's own
+│   │   │                           bots (telegram.ts, whatsapp.ts) use it for, a
+│   │   │                           minimal hashed-userId existence record.
+│   │   │                           (2) the matchmaking product's real schema:
+│   │   │                           candidates, contact_details, messages,
+│   │   │                           partner_prefs, matches, photos — six tables, no
+│   │   │                           ORM, numbered SQL migrations.
+│   │   │                           HelixDB was dropped from this package entirely on
+│   │   │                           2026-08-09 — see §8.
+│   │   └── src/migrations/      ←   numbered .sql files, applied once each
+│   ├── agent/                   ← CALEBX's actual conversational engine.
+│   │   ├── llm.ts               ←   OpenRouter client (openai SDK), enforces the
+│   │   │                             temp 0.1 / temp 0.7 stage split
+│   │   ├── memory.ts            ←   mem0 client: searchMemories, addMemory
+│   │   ├── system-prompt.ts     ←   CALEBX personality + extraction prompts
+│   │   └── agent.ts             ←   runAgent() — the two-stage pipeline in §1
+│   ├── channel/                 ← Shared between telegram-bot and whatsapp-bot only
+│   │   │                           (not form-bot, not whatsapp matchmaking):
+│   │   │                           namespaced user-id scheme (tg:/wa:), file-backed
+│   │   │                           ConsentStore, file-backed onboarding FSM/store,
+│   │   │                           user-facing copy.
+│   ├── form/                    ← Matchmaking questionnaire as a pure domain package
+│   │                               (field defs, FSM, validation, copy). No I/O.
+│   ├── sheets/                  ← Google Sheets as the matchmaking product's storage,
+│   │                               implementing the ports `packages/form` declares.
+│   ├── directory-import/        ← One-shot CLI: imports biodata PDFs/photos into the
+│   │                               matchmaking Sheet. Not a runtime dependency of
+│   │                               any bot.
+│   ├── telegram-bot/            ← TWO entry points on purpose:
+│   │   ├── telegram.ts          ←   CALEBX: consent → onboarding → runAgent
+│   │   └── form-bot.ts          ←   matchmaking form over Sheets, no model, no DB —
+│   │                                 run side-by-side to A/B against telegram.ts
+│   └── whatsapp-bot/            ← CALEBX's WhatsApp channel: same consent/onboarding/
+│                                    runAgent pattern as telegram.ts, plus Meta webhook
+│                                    signature verification, dedupe, and a send queue
+│                                    local to this package (not the BullMQ one §5
+│                                    used to describe — that queue never existed).
+├── docs/architecture.md         ← STALE. A pre-monorepo HelixDB/Ollama blueprint doc,
+│                                    ~770 lines, not updated since. Do not treat as
+│                                    current; ask before relying on it for anything.
 └── .env.example                 ← never commit .env
 ```
 
-### Monorepo rules
+### Monorepo rules (still enforced / still good practice)
 
-- Packages import each other by workspace alias (`@calebx/types`), never by relative path
-  across package boundaries.
-- `core/` has zero imports from `db/`, `telegram-bot/`, `inference/`, or `queue/`.
-  Violation = architectural failure. The domain must not know its infrastructure exists.
-- `types/` and `errors/` are the only packages that `core/` may import.
-- Every package has its own `README.md`. The pre-commit hook enforces this.
+- Packages import each other by workspace alias (`@calebx/core`), never by relative
+  path across package boundaries.
+- `core/` has zero imports from `db/`, `agent/`, `telegram-bot/`, `whatsapp-bot/`.
+  Violation = architectural failure. The domain must not know its infrastructure
+  exists. (This one genuinely holds today — `core/src/index.ts` has no imports at
+  all.)
+- Every package has its own `README.md` (root + `src/`). The pre-commit hook checks
+  for this — it does not check that the README is accurate, so some are stale (see
+  §8).
 
 ---
 
-## 3. Data Architecture
+## 3. Data Architecture (Current State)
 
-### 3.1 HelixDB Schema (db/schema.hx)
+Four stores, each owning one thing.
 
-```
-Nodes:
-  N::User {
-    telegram_id: I64 @unique @index
-    username: String
-    consent_granted: Bool
-    created_at: I64          // unix ms
-    last_active: I64
-  }
+### 3.1 Neo4j — the persona graph (`packages/graph`)
 
-  N::Place {
-    name: String
-    city: String
-    lat: F64
-    lng: F64
-    category: String         // "cafe" | "workspace" | "gym" | etc.
-  }
+`User`, `PersonaChunk`, `Place`, `Group`, joined by `HAS_CHUNK` / `KNOWS` / `VISITED` /
+`MEMBER_OF`. A 384-dimension cosine vector index on `PersonaChunk.embedding`.
 
-  N::Group {
-    telegram_id: I64 @unique
-    name: String
-    description: String
-    category: String
-    member_count: I64
-  }
+- **Chunks are immutable.** A contradiction writes a new chunk; the old one stays and simply
+  weighs less. Decay is computed at read time from `createdAt` with a 90-day half-life — no
+  stored weight, no cron, no drift.
+- **`Place` holds `placeId` and our own tags only.** No name, no coordinates, no `Point`:
+  Google's terms permit storing `place_id` indefinitely and little else, so geo filtering
+  happens in Nearby Search and everything user-visible is hydrated live.
+- **Every query is scoped or explicitly bulk.** `scopedCypher` refuses a statement that
+  neither binds `$ownerId` nor carries `// authz:bulk`, and a test asserts that _every_
+  statement in `cypher.ts` satisfies one of the two.
+- **Vector search is constrained to the owner.** The index is probed wider than `limit` and
+  then narrowed to the user — never an unconstrained ANN handed to somebody.
 
-Edges:
-  E::KNOWS { strength: F64 }          // User → User (social graph, weighted)
-  E::VISITED { count: I64 }           // User → Place
-  E::MEMBER_OF { joined_at: I64 }     // User → Group
-  E::SIMILAR_TO { score: F64 }        // User → User (derived from vector similarity)
+### 3.2 Postgres — mode state, matchmaking, review queue (`packages/db`)
 
-Vectors:
-  V::PersonaChunk {
-    user_id: I64             // FK to User.telegram_id
-    text: String             // raw extracted fact/interest/intent
-    embedding: [F32; 1024]   // FastEmbed nomic-embed-text-v1.5
-    category: String         // "interest" | "location" | "social" | "sentiment"
-    created_at: I64
-    decay_weight: F64        // starts at 1.0, decays over time, recency matters
-  }
-```
+Migration `009_agent_modes_and_community.sql` adds `agent_users` (`active_mode` +
+`enrolled_modes`), `mode_consent` (keyed by user _and_ mode), `review_tasks`,
+`cohort_groups`, and `candidates.interest_embedding vector(384)` with an HNSW index.
 
-**Critical schema rules:**
+Candidate search is hard SQL filters plus pgvector over interest text only — age, city,
+community and diet are constraints, not hints for cosine to weigh.
 
-- Embeddings live on top-level nodes/vectors only. Never nested objects.
-- `telegram_id` is always `I64`. Never pass a string — you will get Error E622 at query compile time.
-- `PersonaChunk` vectors are immutable once written. Updates mean new nodes with updated `decay_weight`.
-  The old chunk is not deleted — the temporal trail is the persona history.
+### 3.3 mem0 — conversational recall (`packages/agent`)
 
-### 3.2 Persona Model
+Unchanged in kind, but **keyed `<userId>#<mode>`**. mem0's `user_id` space is flat and
+`search` has no filter, so sharing one key would surface matrimonial memories inside a
+community reply. `deleteAll` on both keys plus the legacy bare key backs `/forget`.
 
-The persona is not a single record. It is a **weighted collection of PersonaChunk vectors**
-connected to a User node. Each chunk captures one extracted fact from the conversation:
+Raw message text still goes to mem0. That remains a real divergence from the original
+privacy design — state it accurately when describing what CALEBX stores.
 
-```
-"I love working from cafes but hate it when they play loud music"
-→ chunk 1: { category: "preference", text: "prefers cafes for work", decay: 1.0 }
-→ chunk 2: { category: "sentiment",  text: "dislikes loud environments", decay: 1.0 }
-```
+### 3.4 Redis — queues, cache, typing bus (`packages/queue`)
 
-When a user contradicts an old chunk, do not delete it. Write a new chunk and reduce the
-old chunk's `decay_weight`. The LLM context for retrieval should weight chunks by
-`(vector_score * decay_weight)` so recent facts dominate without erasing history.
+Only in `AGENT_EXECUTION=queue` mode. See §5.
 
-### 3.3 GraphRAG Query Pattern
+### 3.5 The embedding dimension is a single constant
 
-For every recommendation query, execute in this order:
-
-```
-1. Embed the user's current message (FastEmbed)
-2. Traverse graph: User → all PersonaChunks (constrained subgraph)
-3. Run ANN within that subgraph (hybrid: vector score + BM25 keyword)
-4. Traverse from top chunks → Place/Group nodes via VISITED/MEMBER_OF edges
-5. Filter: geo-radius if location context present, 2nd-degree KNOWS if social context
-6. Rank: Reciprocal Rank Fusion (RRF) merging vector score + graph proximity
-7. Return top-k results with explanation snippets for the LLM to narrate
-```
-
-Never run a global ANN across all users. Always traverse from the specific User node first.
-This is both a performance requirement and a privacy requirement.
+`EMBEDDING_DIMENSIONS = 384` (`bge-small-en-v1.5`) lives in `packages/embed/src/dimensions.ts`
+and is imported by the Neo4j index, the Postgres column, and a migration test. A mismatch
+fails a unit test rather than silently returning garbage neighbours.
 
 ---
 
 ## 4. Conversational Layer
 
-### 4.1 The Bot's Personality
+### 4.1 One router, two subagents
 
-CALEBX is not a command bot. It does not have menus or `/help` trees.
-It is a curious, warm, city-smart conversational agent.
+The master router (`packages/agent/src/router.ts`) classifies the first substantive message
+into `matchmaker` or `community_connector` at temperature 0.1, in one word. It defaults to
+`community_connector` when unsure — that side asks less and collects less, so a wrong guess
+there is a mildly odd conversation, while a wrong guess the other way opens with questions
+about marriage.
 
-Prompting principles:
+Assignment is **not one-way**. `/switch` moves between modes; entering a mode for the first
+time asks for that mode's own consent, because the two collect genuinely different data. The
+earlier one-way lock was dropped because a misclassified first message would otherwise strand
+someone in the wrong product permanently.
 
-- Respond naturally to whatever the user says, even off-topic.
-- Ask one follow-up question per turn at most. Never interrogate.
-- When surfacing a recommendation, frame it as a suggestion, not a result set.
-- Never reveal internal mechanics to the user ("I'm now searching the vector database...").
+### 4.2 The tool loop
 
-System prompt skeleton (in `inference/prompts/system.ts`):
+Four rounds maximum (`tool-runner.ts`). Not a cost control — a correctness one: a model that
+has called `search` three times with slightly different arguments is flailing, and the user
+is watching a typing indicator while it does. When the budget runs out the loop asks once
+more with tools withheld, forcing prose from what it already has.
 
-```
-You are CALEBX, a city-smart conversational companion on Telegram.
-You talk like a knowledgeable local friend, not a search engine.
-Your job is to understand who this person is through conversation, and
-occasionally — when it feels natural — connect them with people, places,
-or communities that match their vibe.
+Hallucinated tool names, malformed JSON arguments, and thrown tools are all normal results
+fed back to the model, never crashes.
 
-Rules:
-- Never ask more than one question per message.
-- Never mention databases, vectors, AI, or internal systems.
-- When you don't have enough context to recommend, keep talking. Build the picture.
-- Surface a recommendation only when you have ≥3 PersonaChunks with score > 0.75.
-```
+### 4.3 Recommendations are pull, and deterministic
 
-### 4.2 Two-Stage LLM Pipeline Per Turn
+`/recommendation` — and any plain-language ask, which the agent recognises itself and never
+answers with "type /recommendation" — runs the retrieval tools **from code**, then hands the
+real results to the model to narrate. Leaving retrieval to the model means a turn where it
+forgets, or narrates a recommendation it never fetched. When nothing is found, the model is
+not called at all.
 
-Every incoming message runs two Ollama calls in sequence:
+### 4.4 Extraction
 
-**Stage 1 — Extraction (fast, structured output):**
+Still a separate call at temperature 0.1, still never merged with the reply — but it now runs
+in the **ingest job after the reply is sent**, so nobody waits on it. Its output finally has
+somewhere to go: `PersonaChunk` writes in community mode. In matchmaker mode it writes
+nothing, because preferences are only ever saved through the tool that makes the user confirm
+first.
 
-```
-Model: llama3 (or mistral-7b)
-Task: Extract structured facts from this message turn.
-Output: JSON { intents: [], entities: [], sentiment: string, location_hint: string | null }
-Temperature: 0.1  ← low, we want deterministic extraction
-```
+### 4.5 Every reply is post-processed
 
-**Stage 2 — Response (warm, conversational):**
-
-```
-Model: llama3
-Task: Continue the conversation naturally. If recommendation_context is provided,
-      weave it into the response.
-Input: conversation history (last 10 turns) + persona summary + recommendation_context
-Temperature: 0.7  ← higher, we want personality
-```
-
-Do not merge these into one call. Extraction and conversation generation have
-conflicting temperature requirements.
-
-### 4.3 Conversation History Management
-
-- Store the last **20 message turns** per user session in Redis (TTL: 24h).
-- This is the short-term working memory. It feeds Stage 2.
-- The long-term memory lives in HelixDB as PersonaChunks.
-- After every 5 turns, run a background summarization job that distills the session
-  into new PersonaChunks. This keeps the HelixDB persona growing without re-processing
-  every single message.
+`finalizeReply` strips sentences that narrate internals ("let me search the database") and
+enforces at most one question — dropping later interrogative sentences while keeping the
+statements between them. The prompts ask for both; this guarantees them.
 
 ---
 
 ## 5. Queue Architecture
 
-Three isolated BullMQ queues. They never block each other.
+`packages/queue`, with two execution modes that share one code path (`handleAgentJob`) —
+see `assumptions.md` A13:
 
-```
-┌─────────────────────────────────────────────────────┐
-│  ingest-queue                                       │
-│  Job payload: { userId, messageText, sessionId }    │
-│  Worker does: extract → embed → upsert PersonaChunk │
-│  Concurrency: 5                                     │
-│  Retries: 3, exponential backoff                    │
-└─────────────────────────────────────────────────────┘
+- `AGENT_EXECUTION=inline` (default): the bot runs the turn in-process; ingestion is
+  fire-and-forget once the reply is decided.
+- `AGENT_EXECUTION=queue`: the bot enqueues, and three workers do the rest.
 
-┌─────────────────────────────────────────────────────┐
-│  retrieval-queue                                    │
-│  Job payload: { userId, promptVector, chatId }      │
-│  Worker does: GraphRAG → rank → Ollama Stage 2      │
-│  Concurrency: 3  (LLM calls are expensive)          │
-│  Retries: 2                                         │
-└─────────────────────────────────────────────────────┘
+| Queue             | Concurrency | Retries                  | Work                                   |
+| ----------------- | ----------- | ------------------------ | -------------------------------------- |
+| `agent-execution` | 5           | 3, exponential           | router → subagent → outbound           |
+| `ingest`          | 5           | 3, exponential           | extraction → embedding → PersonaChunks |
+| `dispatch`        | **1**       | 5, honours `retry_after` | the throttled send path                |
+| `cohort`          | 1           | 1                        | tag cohorts, then Louvain              |
 
-┌─────────────────────────────────────────────────────┐
-│  dispatch-queue                                     │
-│  Job payload: { chatId, text, parseMode }           │
-│  Worker does: send to Telegram API (throttled)      │
-│  Concurrency: 1  (rate limit is global)             │
-│  Retries: 5, respects retry_after                   │
-└─────────────────────────────────────────────────────┘
-```
+Dispatch is single-threaded because the 30/s Telegram limit is global; a second worker would
+pace against its own state. A 429 is **re-queued, never retried inline** — sleeping through
+`retry_after` inside the one dispatch worker holds every other chat hostage.
 
-The flow across queues per user message:
+Job payloads are validated on the way _out_ of the queue, because a payload written before a
+deploy is read back by the new worker.
 
-```
-GramIO handler → ingest-queue
-ingest-queue completes → retrieval-queue
-retrieval-queue completes → dispatch-queue
-dispatch-queue → Telegram sendMessage
-```
-
-Jobs in each queue are completely independent. If retrieval fails, the ingest result
-is preserved. The user gets an error reply via dispatch-queue regardless.
+A failed turn still owes the user a reply: on the final attempt the agent worker queues
+`copy.AGENT_UNAVAILABLE` itself.
 
 ---
 
-## 6. Telegram Compliance (Non-Negotiable)
+## 6. Telegram & WhatsApp Compliance (Non-Negotiable)
 
-### 6.1 Consent Gate
+### 6.1 Consent
 
-This must run **before any data touches HelixDB**. No exceptions.
+Two layers now:
 
-```typescript
-// packages/telegram-bot/middleware/consent.gate.ts
+- **Channel consent**, file-backed, unchanged: runs before onboarding, before anything
+  reaches the agent. Unconsented text is never queued and never logged.
+- **Per-mode consent**, in `mode_consent`: the mode the router assigns is covered by the
+  grant made at `/start` (assumptions.md A14), but `/switch` into the second mode asks
+  separately and names what that mode collects.
+- **Discoverability** is its own opt-in (`/findme`), off by default. Nobody is described to
+  anyone without it, and even then only as interests plus a rough area behind an opaque
+  handle.
 
-// On every incoming message, check User.consent_granted in HelixDB.
-// If null or false:
-//   1. Send the privacy notice (inline keyboard with Accept / Decline)
-//   2. Drop the message. Do not queue it. Do not log the text.
-// If true:
-//   Pass to next middleware.
-```
+`/forget` is a two-step confirmation and now erases mem0 (both mode keys), the Neo4j subgraph
+including every chunk and edge, `agent_users`/`mode_consent`, open review tasks, and the
+channel stores. A partial failure is reported honestly and files a review task.
 
-The privacy notice must explain in plain language:
+### 6.2 Dispatch Rate Limits — implemented
 
-- What data is stored (conversation-derived interests, not raw messages)
-- How to revoke (`/forget` command deletes all PersonaChunks for this user)
-- That data is used to power recommendations within CALEBX only
-
-### 6.2 Dispatch Rate Limits
-
-Hard limits enforced in `dispatch-queue` worker:
-
-```
-Global:     ≤ 30 messages/second across all chats
-Per chat:   ≤ 1 message/second
-Groups:     ≤ 20 messages/minute per group chat
-```
-
-Implementation pattern:
-
-```typescript
-// Before every sendMessage:
-await sleep(35 + jitter(0, 15)); // 35–50ms global floor with jitter
-
-// Catch HTTP 429:
-if (err.status === 429) {
-  const retryAfter = err.parameters?.retry_after ?? 30;
-  await sleep(retryAfter * 1000);
-  // re-queue the job, do not retry inline
-}
-```
-
-The `jitter()` call is mandatory. Perfectly uniform intervals trigger Telegram's
-timing analysis heuristics and degrade the bot's Contributor Quality Score (CQS).
+`SendPacer`: 30/s globally, 1/s per chat, 20/min per group, with 35–50ms of jitter on every
+send. The jitter is mandatory — uniform intervals are a machine signature. A 429 is
+re-queued after `retry_after`, never retried inline. `sendChatAction` draws from the same
+budget, because chat actions count against the same limits.
 
 ### 6.3 What You Must Never Do
 
-- Never use MTProto / userbot libraries (Telethon, Pyrogram, TDLib in user mode).
-  Use the HTTP Bot API only. This is both a ToS requirement and an architectural one.
-- Never scrape public groups or channels for training data. Section 4.3 of the
-  Bot Developer Terms explicitly prohibits this.
-- Never store raw message text in HelixDB. Store only extracted facts/intents.
-  Raw text in Redis session cache is acceptable (TTL-bounded, never persisted to disk).
-- Never initiate a DM to a user who has not started a conversation first.
-- Never operate in Telegram Secret Chats (the Bot API blocks this by design).
+- Never use MTProto/userbot libraries. HTTP Bot API only.
+- **Never try to create a Telegram group from the bot.** There is no Bot API method; group
+  creation needs a user account. An admin creates it, adds the bot, and runs
+  `/register_group` — then the bot mints invite links itself (assumptions.md A2).
+- Never scrape public groups or channels for training data.
+- Never initiate a DM to a user who has not started a conversation first. This is why person
+  recommendations are anonymised and gated on the _other_ person's opt-in.
+- Never operate in Telegram Secret Chats.
+- **Never cache Google Places data beyond `place_id`.**
+- Describe CALEBX's data practices as they are: mem0 stores raw message and reply pairs, not
+  only extracted facts.
 
 ---
 
 ## 7. Infrastructure & Config
 
-Docker-compose services (Redis, MinIO, HelixDB, Ollama) and the Zod env var schema
-live in the **calebx-infra-config** skill. Load-bearing invariant: HelixDB needs the
-`--disk` flag + MinIO backing anywhere beyond unit tests, or PersonaChunks are wiped
-on restart. Env vars are validated at boot with Zod; a missing/mistyped var exits early.
+No `docker-compose.yml` yet. Local dev runs against real services: Postgres with **pgvector**
+(`DATABASE_URL`), hosted **Neo4j AuraDB** (`NEO4J_URI`/`NEO4J_PASSWORD`), mem0, OpenRouter,
+an embedding service (`EMBED_SERVICE_URL`, or `EMBED_PROVIDER=hash` offline), Redis for the
+queued mode, and Google Places (optional — without a key the community subagent still runs
+and simply cannot suggest venues).
+
+Env vars are declared per package through `env("<scope>")`, so a process is never required to
+supply a variable it has no use for. `HELIX_URL`, `OLLAMA_*` and `PERSONA_CHUNK_THRESHOLD`
+were removed on 2026-09-03 — nothing read them.
+
+Setup:
+
+```bash
+bun install
+bun run db:migrate         # through 009_agent_modes_and_community.sql
+bun run graph:schema       # Neo4j constraints + the 384-dim vector index
+bun run bot:telegram
+```
+
+---
+
+## 8. What Happened to HelixDB
+
+Worth knowing so you don't go looking for it: `packages/db` had a `HelixUserRepository`
+mock from the initial scaffolding (2026-06-28) that, per the commit that removed it,
+"nobody actually ran... against a real HelixDB instance." On 2026-08-09 it was
+repurposed entirely to Postgres for the matchmaking product; `helix.toml` and
+`schema.hx` were deleted as unused. Separately, on 2026-06-30, CALEBX's actual
+persona memory was built on mem0 instead. The two changes were independent — mem0
+wasn't chosen _to replace_ HelixDB, HelixDB just never got past being a mock, and
+mem0 solved the "remember things about this user" problem on its own track.
+
+**Leftover references you'll still find** (harmless, not wired to anything):
+`HELIX_URL` default in `packages/config/src/schema.ts`, a `HelixDBError` class in
+`packages/errors/src/index.ts`, a stale comment in
+`packages/channel/src/consent.store.ts` ("When the HelixDB layer lands..."), and
+the entire unused `packages/types` package. `docs/architecture.md` and the root
+`README.md` are both still written as if HelixDB/Ollama/BullMQ are live — they are
+not; treat them as historical, not current.
+
+The Group/Place/recommendation graph HelixDB was meant to power was never built by
+anyone, in any form. See **CLAUDE1.md** for the current proposal (Neo4j) to build it.
 
 ---
 
 ## 9. Error Handling
 
-Never throw raw `Error`. Use the typed hierarchy in `packages/errors/`.
+`packages/errors` is now used, not merely declared. `ForbiddenError` is thrown by the
+authorization layer on every denial and carries a machine-readable `reason` that tests assert
+on; `Neo4jError`, `PostgresError`, `EmbeddingError`, `ExternalApiError`, `ValidationError`,
+`ModeNotEnrolledError` and `ReviewPendingError` are thrown at their boundaries.
+`HelixDBError` remains only as a deprecated alias.
 
-```
-BaseCalebxError
-├── InfrastructureError
-│   ├── HelixDBError        (query failures, type mismatches)
-│   ├── RedisError          (queue, session failures)
-│   └── TelegramApiError    (HTTP 429, network failures)
-├── DomainError
-│   ├── ConsentRequiredError
-│   ├── PersonaNotFoundError
-│   └── InsufficientContextError  (not enough chunks to recommend yet)
-└── ValidationError             (Zod parse failures at boundaries)
-```
+Two rules that hold everywhere:
 
-Every worker job must catch errors, log them with structured context, and either:
-
-- Re-queue with backoff if the error is transient (`InfrastructureError`)
-- Dead-letter the job if the error is permanent (`DomainError`, `ValidationError`)
-
-Dead-lettered jobs must trigger a dispatch-queue job that sends the user a
-graceful fallback message. The user should never see a silent failure.
+- **A failed turn still owes the user a reply.** Every path — inline catch, worker `failed`
+  handler, dead-lettered job — ends in a visible message.
+- **A denial is never explained to the user.** `ForbiddenError.reason` is deliberately
+  non-identifying, and the tool runner replaces it with a flat refusal before the model ever
+  sees it, because the model repeats what it is given.
 
 ---
 
 ## 10. Development Phases & Ownership Split
 
-The four-phase build plan (Foundation → Ingestion & Consent → Persona &
-Recommendations → Dispatch & Hardening), with per-phase owner split, tasks, and exit
-criteria, lives in the **calebx-dev-phases** skill.
+The **calebx-dev-phases** skill's four-phase plan (Foundation → Ingestion & Consent
+→ Persona & Recommendations → Dispatch & Hardening) describes the original
+HelixDB-based build order and is not what actually happened — Phase 1's own exit
+criteria (`docker compose up`, `helix compile`) were never met, yet Phase 2-shaped
+work (consent, onboarding, mem0 integration) shipped anyway, on a different
+foundation. Read it for the shape of what recommendations/dispatch work remains,
+not as a status report.
 
 ---
 
 ## 11. What Claude Should Always Do
 
-When generating code for this project:
+1. **Never read or write user data without a `Principal`.** Every repository and store method
+   takes one as its first argument. If you are adding a method that does not, you are adding
+   a hole — and its test will say so.
 
-1. **Check the port before implementing.** If you are writing a new DB operation,
-   look at `core/ports/` first. Implement the existing interface, do not create a new one.
+2. **Never hand-write a `WHERE user_id = …`.** Use `scopedSql` / `scopedCypher`; they refuse
+   an unscoped statement. A cross-user query needs an explicit `/* authz:bulk */` marker
+   _and_ a system principal, or `/* authz:discoverable */` _and_ a `discoverable = true`
+   predicate.
 
-2. **Never import infrastructure into core.** If you are in `core/` and feel the urge
-   to import from `db/` or `telegram-bot/`, stop. You are doing it wrong.
+3. **A decision is not a boolean.** `authorize` returns a projection too; apply it with
+   `project()`. "Allowed, but anonymized" is the most common answer in this system.
 
-3. **All external I/O goes through the queue.** No direct Telegram API calls from
-   handlers. No direct HelixDB calls from the bot. Everything is a queue job.
+4. **Mode before ownership.** A cross-mode access is denied even for your own data. Do not
+   route around it.
 
-4. **`telegram_id` is always `I64`.** If you see it as a string anywhere, fix it.
-   HelixDB will throw Error E622 at query compile time and it will cost you an hour.
+5. **Never import infrastructure into `core/`.** Still holds; `core` has no imports at all.
 
-5. **Jitter is not optional.** Every sleep in the dispatch worker gets a random component.
+6. **Extraction and conversation stay separate calls** at 0.1 and 0.7. Extraction now runs in
+   the ingest job, after the reply.
 
-6. **No `console.log`.** Use `packages/logger/`. Every log entry is JSON with a
-   `correlationId`, `userId`, `jobId`, and `phase`.
+7. **PersonaChunks are immutable.** Write a new one; decay handles the rest. There is no
+   `UPDATE` path and there should not be.
 
-7. **Extraction and conversation are two separate Ollama calls.** Never combine them.
-   Different temperature requirements. Different failure modes.
+8. **User ids are namespaced (`tg:123`), never raw platform ids.** The Postgres hash goes on
+   the principal as an alias, not as a second identity.
 
-8. **PersonaChunks are immutable.** Never UPDATE a chunk. Write a new one, decay the old.
+9. **Anything a user reads or answers belongs in `packages/channel`.** Bot packages hold
+   transport and rendering only.
 
-9. **Test the consent gate first on any new handler.** No exceptions to this rule.
+10. **A failed turn still owes the user a reply.** Memory and persona writes are best-effort
+    and must never swallow a user-visible message.
 
-10. **When in doubt about HelixDB schema, run `helix compile` before assuming it works.**
-    The TypeScript SDK catches type mismatches at query bundle generation time, not runtime.
+11. **Never let a tool payload reach the model unscanned** in matchmaker mode. The model
+    repeats what it is given.
 
-11. **Anything a user reads or answers belongs in `packages/channel`, not in a bot.**
-    Copy, option ids, persisted option values, the onboarding FSM. A bot package may only
-    hold transport and rendering. If you are about to write a user-facing string inside
-    `telegram-bot/` or `whatsapp-bot/`, you are creating drift between the channels.
+12. **Don't assume; write it down.** If you make a judgement call the user did not specify,
+    add it to `assumptions.md` with what to change if it is wrong.
 
-12. **User ids are namespaced (`tg:123`, `wa:16505551234`), never raw platform ids.**
-    Build them with `telegramUserId()` / `whatsappUserId()`. mem0 has a single flat
-    `user_id` space — a bare WhatsApp number can collide with a Telegram id and merge two
-    people's personas. This is also the groundwork for federated identity (§13).
-
-13. **A failed turn still owes the user a reply.** Memory writes are best-effort and must
-    not swallow a user-visible message; a thrown `runAgent` falls back to
-    `copy.AGENT_UNAVAILABLE`. Silence is indistinguishable from a dead bot.
+13. **Run `bun test` and `bun run typecheck`.** Both are fast and neither needs a network.
 
 ---
 
 ## 12. Key Risks & Mitigations
 
-The risk register (Telegram 429 cascade, HelixDB E622, persona drift, LLM
-hallucination, MinIO data loss, platform ban) and its mitigations live in the
-**calebx-risks** skill.
+| Risk                                       | Impact                                      | Mitigation today                                                                                                                                                                                                         |
+| ------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Telegram 429 cascade                       | throttling, then a ban                      | `SendPacer` (30/s, 1/s per chat, 20/min per group) + mandatory 35–50ms jitter; 429s re-queued with `retry_after`                                                                                                         |
+| One user's data reaching another           | the worst failure available                 | Two independent layers: the policy in `@calebx/authz`, and query-scope enforcement that makes an unscoped SQL or Cypher statement unrunnable. A test asserts every statement in `cypher.ts` is scoped or explicitly bulk |
+| Contact details leaking through the model  | irreversible, real-world                    | `assertNoContactLeak` scans every matchmaking tool payload and fails closed                                                                                                                                              |
+| Mode boundary blurring                     | matrimonial data in a social reply          | Mode is checked before ownership; mem0 is keyed `<userId>#<mode>`                                                                                                                                                        |
+| Model inventing a recommendation           | plausible, wrong, unfalsifiable             | `/recommendation` retrieval is deterministic; the narration prompt forbids padding, and tools return "nothing found" as a normal result                                                                                  |
+| Silent profile rewrite                     | stated preferences overwritten by inference | Preferences need explicit confirmation; background ingestion writes nothing in matchmaker mode                                                                                                                           |
+| Cohort clustering on a sparse graph        | one blob, or all singletons                 | Tag cohorts ship first; Louvain is gated on a minimum component size                                                                                                                                                     |
+| Places data going stale or breaching terms | ToS exposure                                | Only `place_id` is stored; everything user-visible is hydrated live                                                                                                                                                      |
+| `/forget` half-succeeding                  | user told their data is gone when it is not | Each store attempted independently, failures reported honestly, and a partial wipe files a review task                                                                                                                   |
 
 ---
 
-## 13. Future Work (Post-MVP)
+## 13. Future Work
 
-- ~~**WhatsApp adapter**~~ — shipped, on the official Meta Cloud API (`packages/whatsapp-bot`).
-  Baileys was rejected: it drives a real user account, which is the WhatsApp equivalent of the
-  MTProto userbots §6.3 bans for Telegram.
-- **Discord adapter** — identical pattern, different `packages/discord-bot/`
-- **mem0 integration** — sits between workers and HelixDB; handles contradiction resolution,
-  deduplication, and decay scoring automatically. Removes custom decay logic from Phase 3.
-- **Web dashboard** — read-only view of your own persona graph (transparency feature)
-- **Federated identity** — link Telegram + WhatsApp accounts into a single persona graph
-- **Group memory** — when CALEBX is added to a group, build a collective group persona
-  separate from individual user personas, with strict cross-context privacy boundaries
+- **Seeding a real group catalog** — venues come from the Places API, but a group exists only
+  once an admin creates one and runs `/register_group`. This is the biggest gap between
+  "works" and "useful".
+- **Sheets → Postgres sync** — without it, `form-bot` signups stay invisible to the
+  matchmaker (assumptions.md A3).
+- **A WhatsApp dispatch worker** — WhatsApp runs inline only today (A16).
+- **Review reminders** — a pending task sits open indefinitely; `listOpenOlderThan` exists
+  for it (A11).
+- **Discord adapter**, **web dashboard**, **federated identity**, **group memory** — as
+  before, not started.
+
+---
+
+## 14. Tests
+
+`bun test` — 805 tests, and **none of them need a database, a model, or a network.** That is
+deliberate: the parts worth testing are pure or take injected ports, so a fake can drive
+them. `MemoryGraphStore` runs the same traversals and the same authorization checks as the
+Neo4j store, `FakeSqlExecutor` records SQL so a missing owner predicate fails a test, and
+`ScriptedModel` makes "what happens when the model hallucinates a tool name?" a unit test.
+
+Where to look first:
+
+| Question                                       | File                                                                          |
+| ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| Can one user reach another's data?             | `packages/authz/src/policy.test.ts`, `packages/queue/src/integration.test.ts` |
+| Can an unscoped query be run at all?           | `packages/authz/src/scope.test.ts`, `packages/graph/src/cypher.test.ts`       |
+| Does the mode lock hold, and can it be undone? | `packages/agent/src/modes.test.ts`, `packages/queue/src/integration.test.ts`  |
+| Do the anti-ban limits hold?                   | `packages/queue/src/limiter.test.ts`                                          |
+| Can a contact detail escape?                   | `packages/matchmaking/src/guardrails.test.ts`                                 |
+| Does `/forget` really erase?                   | `packages/agent/src/forget.test.ts`, `integration.test.ts`                    |
+
+---
+
+## 15. Tracing
+
+`packages/trace`. Every turn is a trace; every LLM call, tool call, query and send is a span.
+
+```bash
+bun run trace:view agent              # last 5 traces + the slowest span names
+bun run trace:view agent <traceId>    # one trace, as a tree
+```
+
+Attribute redaction is on by default: message text is replaced with
+`[redacted:<len>:<hash8>]` and a namespaced id is masked to `wa:***234`, because a WhatsApp
+`wa_id` is a phone number. mem0 already stores raw text; the trace log must not become a
+second copy of it.

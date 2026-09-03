@@ -10,3 +10,5 @@
 - `messages.repo.ts` — logs one row per WhatsApp message (idempotent on
   `wa_message_id`). Other tables get their own `*.repo.ts` as they're needed.
 - `migrations/` — the schema. See its own README.
+
+See the package README for the agent-engine repositories added by migration 009.

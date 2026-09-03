@@ -28,3 +28,28 @@ shipped.
 candidate, a match summary, or a WhatsApp message — the platform never shares
 contact info automatically. The only path to a candidate seeing another's
 contact details is a manual admin action after mutual interest.
+
+---
+
+## Agent-engine additions (migration 009)
+
+`packages/db` now also backs the agent engine, alongside the matchmaking product's own
+tables. All of it goes through `@calebx/authz`: every repository takes a `Principal`, and
+every statement runs through `scopedSql`, which refuses a query with no owner predicate.
+
+| Repository                  | Owns                                                                |
+| --------------------------- | ------------------------------------------------------------------- |
+| `AgentUsersRepository`      | `agent_users` (`active_mode` + `enrolled_modes`) and `mode_consent` |
+| `CandidateSearchRepository` | hard SQL filters + pgvector over `interest_embedding`               |
+| `MatchmakingRepository`     | `partner_prefs` and `matches`                                       |
+| `ReviewTasksRepository`     | the human-in-the-loop queue                                         |
+| `CohortGroupsRepository`    | cohort → Telegram group registry                                    |
+
+Two shapes worth knowing:
+
+- **`FakeSqlExecutor`** is exported on purpose. It records the SQL each repository issues, so
+  "did this query carry its owner predicate?" is a unit test in any package, not a
+  code-review habit.
+- **Preference upserts coalesce.** `coalesce(EXCLUDED.x, partner_prefs.x)` rather than a full
+  replace: the agent saves one preference at a time from conversation, and a replace would
+  blank the other nine.

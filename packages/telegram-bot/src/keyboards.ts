@@ -45,3 +45,24 @@ export const purposeKeyboard = keyboardFrom(PURPOSE_OPTIONS);
 export function keyboardForGroup(group: "age" | "purpose"): InlineKeyboard {
   return group === "age" ? ageKeyboard : purposeKeyboard;
 }
+
+/** Asked before entering a mode for the first time — each collects different data. */
+export const modeConsentKeyboard = new InlineKeyboard()
+  .text(copy.MODE_SWITCH_ACCEPT_LABEL, copy.MODE_SWITCH_ACCEPT)
+  .row()
+  .text(copy.MODE_SWITCH_DECLINE_LABEL, copy.MODE_SWITCH_DECLINE);
+
+/**
+ * `/forget` is irreversible, so it is a two-step with the destructive action
+ * spelled out rather than a single command that silently wipes everything.
+ */
+export const forgetConfirmKeyboard = new InlineKeyboard()
+  .text(copy.FORGET_DECLINE_LABEL, copy.FORGET_CONFIRM_DECLINE)
+  .row()
+  .text(copy.FORGET_ACCEPT_LABEL, copy.FORGET_CONFIRM_ACCEPT);
+
+/** People discovery is opt-in; nobody is described to anyone without this. */
+export const discoverableKeyboard = new InlineKeyboard()
+  .text("Yes, find me people", copy.DISCOVERABLE_ACCEPT)
+  .row()
+  .text("Not for now", copy.DISCOVERABLE_DECLINE);

@@ -12,4 +12,9 @@ export const config = {
     "ONBOARDING_STORE_PATH",
     dataPath("onboarding.json"),
   ),
+  /**
+   * Where human-review escalations are announced. Optional: without it the
+   * tasks are still recorded in Postgres, they just are not pushed to anyone.
+   */
+  adminChatId: e.optional("ADMIN_CHAT_ID", "") || null,
 } as const;

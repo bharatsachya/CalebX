@@ -1,0 +1,19 @@
+{
+  "name": "@calebx/embed",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@calebx/config": "*",
+    "@calebx/errors": "*",
+    "@calebx/trace": "*"
+  },
+  "peerDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

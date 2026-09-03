@@ -284,18 +284,41 @@ Send any message to your bot on Telegram. You'll see the consent prompt first, t
 ### Environment Variables
 
 ```bash
-# Required
+# Required — the bot will not boot without these
 TELEGRAM_BOT_TOKEN=""
+OPENROUTER_API_KEY=""
+MEM0_API_KEY=""
+DATABASE_URL="postgres://localhost:5432/calebx"   # must support `CREATE EXTENSION vector`
 
-# Defaults (override as needed)
-HELIX_URL="http://localhost:6969"
+# Required for the community subagent (hosted Neo4j AuraDB)
+NEO4J_URI="neo4j+s://xxxx.databases.neo4j.io"
+NEO4J_PASSWORD=""
+NEO4J_USER="neo4j"                # default
+NEO4J_DATABASE="neo4j"            # default
+
+# Embeddings — bge-small-en-v1.5, 384 dims (see packages/embed)
+EMBED_PROVIDER="http"             # http | fastembed | hash
+EMBED_SERVICE_URL=""              # required when EMBED_PROVIDER=http
+
+# Queues, cache, and the typing bus
 REDIS_URL="redis://localhost:6379"
-OLLAMA_URL="http://localhost:11434"
-OLLAMA_CHAT_MODEL="llama3"
-OLLAMA_EMBED_MODEL="nomic-embed-text"
-PERSONA_CHUNK_THRESHOLD="0.75"   # min score before surfacing a recommendation
-MAX_SESSION_TURNS="20"           # turns kept in Redis short-term memory
+
+# Human review queue (assumptions.md A1)
+ADMIN_CHAT_ID=""
+
+# Optional
+OPENROUTER_MODEL="meta-llama/llama-3.1-8b-instruct:free"
+GOOGLE_PLACES_API_KEY=""          # community places recommendations
+TRACE="on"                        # off disables agent tracing
+TRACE_STDOUT="false"              # also emit spans as JSON lines
+MAX_SESSION_TURNS="20"
+DISPATCH_JITTER_MAX_MS="15"
 ```
+
+`HELIX_URL`, `OLLAMA_URL`, `OLLAMA_CHAT_MODEL`, `OLLAMA_EMBED_MODEL` and
+`PERSONA_CHUNK_THRESHOLD` were removed on 2026-09-03 — nothing read them. Each package
+now declares what it needs through `env("<scope>")`, so a process is never required to
+supply a variable it has no use for.
 
 ---
 

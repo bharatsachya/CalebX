@@ -1,4 +1,5 @@
 export * as copy from "./copy.ts";
+export type { CommandHints, ModeName } from "./copy.ts";
 
 export {
   CHANNEL_LABELS,

@@ -12,7 +12,9 @@
     "@calebx/channel": "*",
     "@calebx/config": "*",
     "@calebx/core": "*",
-    "@calebx/db": "*"
+    "@calebx/db": "*",
+    "@calebx/queue": "*",
+    "@calebx/trace": "*"
   },
   "peerDependencies": {
     "typescript": "^5.4.5"

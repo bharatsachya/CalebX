@@ -119,3 +119,98 @@ export const UNSUPPORTED_MESSAGE = `I can only read text for now — send me a m
  * staring at silence wondering whether their message arrived.
  */
 export const AGENT_UNAVAILABLE = `Sorry — I glitched for a second there. Say that again?`;
+
+// --- Modes ---
+
+/**
+ * Mode-facing copy. The two modes are separate products with separate data
+ * practices, so switching into one for the first time asks for its own consent
+ * rather than reusing the grant made at /start.
+ */
+export type ModeName = "matchmaker" | "community_connector";
+
+export const MODE_TITLES: Record<ModeName, string> = {
+  matchmaker: "matchmaking",
+  community_connector: "places & people",
+};
+
+export const MODE_SWITCH_ACCEPT = "mode:accept";
+export const MODE_SWITCH_DECLINE = "mode:decline";
+
+export const MODE_SWITCH_ACCEPT_LABEL = "✓ Yes, switch";
+export const MODE_SWITCH_DECLINE_LABEL = "Stay here";
+
+export const switchedMessage = (mode: ModeName): string =>
+  mode === "matchmaker"
+    ? `Switched to matchmaking. Tell me a bit about who you're hoping to meet.`
+    : `Switched. So — what part of town are you in these days?`;
+
+export const alreadyInModeMessage = (mode: ModeName): string =>
+  `We're already on ${MODE_TITLES[mode]}. What's on your mind?`;
+
+/**
+ * Asked before entering a mode for the first time. It names what that mode
+ * collects, because that is the thing that differs between them — a general
+ * "I agree" made at /start cannot stand in for it.
+ */
+export const modeConsentRequest = (mode: ModeName): string =>
+  mode === "matchmaker"
+    ? `Matchmaking works a bit differently.
+
+To find matches I'd keep a matrimonial profile for you — the things you tell me about what you're looking for, and how to reach you when both sides say yes. Contact details are only ever passed on by a person here, never automatically.
+
+Shall we switch over?`
+    : `The places-and-people side works a bit differently.
+
+There I'd keep track of the interests, areas and communities you mention, so I can suggest spots and groups that fit. If you ever want to be introduced to someone, I'll ask you separately first — nobody sees anything about you until you say so.
+
+Shall we switch over?`;
+
+export const modeConsentDeclined = `No problem — we'll stay where we are.`;
+
+/** Recommendation ran and found nothing. Honest rather than apologetic. */
+export const NOTHING_TO_RECOMMEND = `Nothing worth passing on just yet — I don't know enough about you. Tell me one thing you'd do on a free evening?`;
+
+// --- Discoverability (community mode) ---
+
+export const DISCOVERABLE_ACCEPT = "discoverable:accept";
+export const DISCOVERABLE_DECLINE = "discoverable:decline";
+
+export const DISCOVERABLE_REQUEST = `One thing before I introduce anyone.
+
+If you're up for it, I can mention you to people you already share a connection with — just what you're into and roughly where you are. No name, no number, no photo, and nothing more unless you both agree.
+
+Want to be findable that way?`;
+
+export const discoverableSet = (on: boolean): string =>
+  on
+    ? `Done — I'll keep you in mind when someone's a good fit.`
+    : `Understood — I'll keep you out of it.`;
+
+// --- /forget ---
+
+export const forgetConfirmRequest = (hints: CommandHints): string =>
+  `Just so we're clear: this erases everything I've learned about you — interests, matches, groups, all of it — across both sides of CALEBX. It cannot be undone.
+
+Send ${hints.forget} again to confirm, or anything else to carry on.`;
+
+export const FORGET_CONFIRM_ACCEPT = "forget:accept";
+export const FORGET_CONFIRM_DECLINE = "forget:decline";
+
+export const FORGET_ACCEPT_LABEL = "Delete everything";
+export const FORGET_DECLINE_LABEL = "Cancel";
+
+/**
+ * Partial failure is reported honestly. Telling someone their data is gone when
+ * one store still holds it is worse than admitting the gap.
+ */
+export const forgetPartialFailure = `I removed most of it, but part didn't clear. I've flagged it for someone here to finish — nothing new is being stored in the meantime.`;
+
+// --- Admin ---
+
+export const REGISTER_GROUP_USAGE = `Usage: /register_group <cohort-key>  — run this inside the group, with the bot as an admin.`;
+
+export const registerGroupDone = (cohortKey: string): string =>
+  `Registered this group for ${cohortKey}. Invite link stored.`;
+
+export const REGISTER_GROUP_NOT_ADMIN = `I need to be an admin here before I can create an invite link.`;

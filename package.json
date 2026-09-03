@@ -24,7 +24,14 @@
     "azure:start": "bun run scripts/start-azure.ts",
     "azure:destroy": "bun run scripts/destroy-azure.ts",
     "prepare": "husky",
-    "import:images": "bun --cwd packages/directory-import import:images"
+    "import:images": "bun --cwd packages/directory-import import:images",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "graph:schema": "bun --cwd packages/graph schema",
+    "trace:view": "bun --cwd packages/trace view",
+    "worker:agent": "bun --cwd packages/queue worker:agent",
+    "worker:ingest": "bun --cwd packages/queue worker:ingest",
+    "worker:dispatch": "bun --cwd packages/queue worker:dispatch"
   },
   "lint-staged": {
     "**/*.{ts,tsx,js}": [
@@ -43,5 +50,12 @@
     "prettier": "^3.8.3",
     "tsx": "^4.11.0",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "bullmq": "^6.3.4",
+    "graphology": "^0.26.0",
+    "graphology-communities-louvain": "^2.0.2",
+    "ioredis": "^6.0.0",
+    "neo4j-driver": "^6.2.0"
   }
 }

@@ -4,13 +4,22 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "bun test"
   },
   "dependencies": {
     "@calebx/config": "*",
     "@calebx/core": "*",
     "mem0ai": "^2.1.9",
-    "openai": "^4.104.0"
+    "openai": "^4.104.0",
+    "@calebx/authz": "*",
+    "@calebx/community": "*",
+    "@calebx/db": "*",
+    "@calebx/embed": "*",
+    "@calebx/errors": "*",
+    "@calebx/graph": "*",
+    "@calebx/matchmaking": "*",
+    "@calebx/trace": "*"
   },
   "peerDependencies": {
     "typescript": "^5.4.5"
