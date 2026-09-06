@@ -33,7 +33,7 @@ export const COMMANDS = {
 } as const;
 
 export const WELCOME = [
-  "Hi — I'll take you through a few questions so a matchmaker can get a proper picture of you.",
+  "Hi — I'll take you through a few questions to build your matchmaking profile on Bettle.",
   "",
   `It's ${FORM_FIELDS.length} questions. You can stop any time and pick up where you left off with ${COMMANDS.start}.`,
   `Optional questions can be passed with ${COMMANDS.skip}.`,
@@ -51,11 +51,11 @@ export const NEEDS_CONSENT_NUDGE =
   "Before we start, I need your okay to store what you share.";
 
 export const PRIVACY_NOTICE = [
-  "Hi — I'll take you through a short questionnaire so a matchmaker can put together suggestions for you.",
+  "Hi — I'll take you through a short questionnaire so we can identify your best partner matches on Bettle.",
   "",
   "Before we start:",
-  "• I store what you tell me — biodata, family details, contact info, and what you're looking for — so a matchmaker can review it.",
-  "• Your contact details are kept separate and are never shown to anyone you're matched with. They're shared only if both sides are interested, and only by hand.",
+  "• I store what you tell me — biodata, family details, contact info, and what you're looking for — to find and curate your matches.",
+  "• Your contact details are kept separate and are never shown to anyone you're matched with. They are shared only if both sides are interested.",
   `• You're in control: send ${COMMANDS.forget} anytime to erase everything and revoke this.`,
   "",
   "Tap below to continue.",
@@ -95,11 +95,10 @@ export const ALREADY_COMPLETE = [
 
 export function completed(name: string): string {
   return [
-    `Thanks${name ? `, ${escapeHtml(name)}` : ""} — that's everything.`,
+    `Thanks${name ? `, ${escapeHtml(name)}` : ""} — that's everything! 🎉`,
     "",
-    "A matchmaker will go through your profile and put suggestions together by hand. There's no algorithm doing this bit.",
+    "We've saved your profile and preferences on Bettle. We're currently in our onboarding phase — our team will review your profile to find your best matches, and we'll reach out as soon as matching begins.",
     "",
-    `${COMMANDS.match} — check for suggestions`,
     `${COMMANDS.update} — change an answer`,
   ].join("\n");
 }
@@ -127,7 +126,7 @@ export function question(
 export const CONTACT_SECTION_NOTICE = [
   "Next few are your contact details.",
   "",
-  "These are kept separate from the rest of your profile and are never shown to anyone you're matched with. A matchmaker shares them only if both sides are interested, and only by hand.",
+  "These are kept separate from the rest of your profile and are never shown to anyone you're matched with. They are shared only if both sides express mutual interest.",
 ].join("\n");
 
 // ── Validation ───────────────────────────────────────────────────────

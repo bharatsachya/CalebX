@@ -42,16 +42,18 @@ export const CONSENT_DECLINE_LABEL_SHORT = "Not now";
 
 export const privacyNotice = (
   hints: CommandHints,
-): string => `👋 Hi, I'm CALEBX.
+): string => `👋 Hi, I'm Bettle.
 
-I get to know you through our conversation, and over time I can suggest people, places, and communities that fit you.
+I'm your matchmaking platform designed to help you find your ideal partner.
 
-Before we start, here's the deal:
-• I store interests and topics I pick up from our chats — not your raw messages.
-• I use them only to make suggestions inside CALEBX.
-• You're in control: send ${hints.forget} anytime to erase everything I've learned and revoke this.
+We're currently in our onboarding phase to gather your details, preferences, and what you value in a partner before matching goes live.
 
-Tap below to continue.`;
+Before we start:
+• We store your details and preferences securely.
+• They are used solely to curate and identify the best matches for you.
+• You're in control: send ${hints.forget} anytime to erase your details and revoke this.
+
+Tap below to start your onboarding.`;
 
 export const ACCEPTED_MESSAGE = `Great — let me ask you a few quick things first.`;
 
@@ -74,31 +76,13 @@ export const onboardingCityQuestion = (name: string): string =>
 
 export const ONBOARDING_AGE_QUESTION = `And roughly how old are you?`;
 
-export const ONBOARDING_PURPOSE_QUESTION = `Last one — what brings you to CALEBX?`;
+export const ONBOARDING_PURPOSE_QUESTION = `Last one — what kind of connection are you looking for on Bettle?`;
 
-export const onboardingComplete = (name: string, purpose: string): string =>
-  `Perfect, ${name}! ${purposeWelcomeSnippet(purpose)} What's been on your mind lately?`;
+export const onboardingComplete = (name: string, _purpose?: string): string =>
+  `You're all set, ${name}! 🎉 We've saved your profile and partner preferences.\n\nDirect chatting and matching aren't open quite yet, but we're actively reviewing profiles and will notify you as soon as your best matches are ready. Stay tuned!`;
 
-function purposeWelcomeSnippet(purpose: string): string {
-  if (purpose.includes("meet people") && purpose.includes("discover"))
-    return "I'll help you connect with people, uncover great spots, and find your communities.";
-  if (purpose.includes("meet people"))
-    return "I'll keep an eye out for people worth knowing.";
-  if (purpose.includes("discover places"))
-    return "I'll steer you toward spots that match your vibe.";
-  if (purpose.includes("communities")) return "I'll help you find your people.";
-  return "I'm here to help you explore.";
-}
-
-/**
- * The first-person summary written to long-term memory when onboarding finishes.
- *
- * Byte-identical to the string this project has always written. Existing
- * memories were stored in this exact shape; changing it would make the same
- * fact read two different ways to the model.
- */
 export const onboardingSummary = (record: OnboardingRecord): string =>
-  `My name is ${record.name ?? "friend"}, I'm ${record.age ?? "unknown age"} years old, based in ${record.city ?? "unknown city"}. I joined CALEBX to: ${record.purpose ?? "explore"}.`;
+  `My name is ${record.name ?? "friend"}, I'm ${record.age ?? "unknown age"} years old, based in ${record.city ?? "unknown city"}. I joined Bettle to: ${record.purpose ?? "find a partner"}.`;
 
 export const ONBOARDING_SUMMARY_ACK = `Got it — I'll keep that in mind.`;
 
