@@ -47,16 +47,18 @@ section("Copy renders byte-identically with Telegram's command hints");
 check(
   "privacyNotice",
   copy.privacyNotice(HINTS),
-  `👋 Hi, I'm CALEBX.
+  `👋 Hi, I'm Bettle.
 
-I get to know you through our conversation, and over time I can suggest people, places, and communities that fit you.
+I'm your matchmaking platform designed to help you find your ideal partner.
 
-Before we start, here's the deal:
-• I store interests and topics I pick up from our chats — not your raw messages.
-• I use them only to make suggestions inside CALEBX.
-• You're in control: send /forget anytime to erase everything I've learned and revoke this.
+We're currently in our onboarding phase to gather your details, preferences, and what you value in a partner before matching goes live.
 
-Tap below to continue.`,
+Before we start:
+• We store your details and preferences securely.
+• They are used solely to curate and identify the best matches for you.
+• You're in control: send /forget anytime to erase your details and revoke this.
+
+Tap below to start your onboarding.`,
 );
 check(
   "ACCEPTED_MESSAGE",
@@ -101,7 +103,7 @@ check(
 check(
   "ONBOARDING_PURPOSE_QUESTION",
   copy.ONBOARDING_PURPOSE_QUESTION,
-  "Last one — what brings you to CALEBX?",
+  "Last one — what kind of connection are you looking for on Bettle?",
 );
 check(
   "ONBOARDING_SUMMARY_ACK",
@@ -110,27 +112,12 @@ check(
 );
 
 section("Every onboardingComplete branch");
-const complete = (purpose: string): string =>
-  copy.onboardingComplete("Caleb", purpose);
+const expectedComplete =
+  "You're all set, Caleb! 🎉 We've saved your profile and partner preferences.\n\nDirect chatting and matching aren't open quite yet, but we're actively reviewing profiles and will notify you as soon as your best matches are ready. Stay tuned!";
 check(
-  "all",
-  complete("meet people, discover places, and find communities"),
-  "Perfect, Caleb! I'll help you connect with people, uncover great spots, and find your communities. What's been on your mind lately?",
-);
-check(
-  "meet",
-  complete("meet people"),
-  "Perfect, Caleb! I'll keep an eye out for people worth knowing. What's been on your mind lately?",
-);
-check(
-  "places",
-  complete("discover places"),
-  "Perfect, Caleb! I'll steer you toward spots that match your vibe. What's been on your mind lately?",
-);
-check(
-  "communities",
-  complete("find communities"),
-  "Perfect, Caleb! I'll help you find your people. What's been on your mind lately?",
+  "complete",
+  copy.onboardingComplete("Caleb", "meet people"),
+  expectedComplete,
 );
 
 section("Option ids (platform round-trip) and values (persisted)");
@@ -176,7 +163,7 @@ for (const input of [
     check(
       "memory summary",
       result.memory.message,
-      "My name is Caleb, I'm 18-24 years old, based in Bhiwadi. I joined CALEBX to: meet people, discover places, and find communities.",
+      "My name is Caleb, I'm 18-24 years old, based in Bhiwadi. I joined Bettle to: meet people, discover places, and find communities.",
     );
     check(
       "memory ack",
