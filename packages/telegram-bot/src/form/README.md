@@ -18,6 +18,7 @@ rule 11) — it is the drift that makes a second channel diverge.
 | `render.ts`      | `Prompt` → Telegram message. HTML parse mode.                   |
 | `session.ts`     | In-memory `/update` edit mode.                                  |
 | `queue.ts`       | Per-user serialisation.                                         |
+| `typing.ts`      | Telegram chat action ("typing...") loader helper.               |
 
 ## Why the queue
 

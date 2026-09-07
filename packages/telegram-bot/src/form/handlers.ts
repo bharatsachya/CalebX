@@ -28,6 +28,7 @@ import { loadProfile, type ProfileStores } from "./profile.ts";
 import { UserQueue } from "./queue.ts";
 import { sendText } from "./render.ts";
 import { endEdit } from "./session.ts";
+import { withTyping } from "./typing.ts";
 
 export interface FormDeps extends ProfileStores {
   matches: MatchStore;
@@ -55,7 +56,7 @@ export function registerFormHandlers(bot: Bot, deps: FormDeps): void {
   ): void =>
     queue.run(userId, async () => {
       try {
-        await task();
+        await withTyping(context, task);
       } catch (error) {
         logAuditEvent("sheets_write_failed", {
           telegramUserId: userId,

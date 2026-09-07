@@ -1,5 +1,5 @@
 /// <reference types="bun" />
-import { describe, expect, it, beforeEach } from "bun:test";
+import { describe, expect, it, beforeEach, spyOn } from "bun:test";
 import {
   type CandidateProfile,
   type CandidateStore,
@@ -448,33 +448,38 @@ describe("Form Bot Phone Linking & Identity Verification", () => {
 
   // 16. Google Sheets failure
   it("Scenario 16: handles sheet persistence failure gracefully without unhandled crashes", async () => {
-    const failingCandidates: CandidateStore = {
-      async get() {
-        return null;
-      },
-      async set() {
-        throw new Error("Sheets 503 service unavailable");
-      },
-      async delete() {
-        throw new Error("Sheets 503 service unavailable");
-      },
-    };
-    const badDeps: FormDeps = {
-      candidates: failingCandidates,
-      contacts,
-      matches,
-      consent,
-    };
+    const errorSpy = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const failingCandidates: CandidateStore = {
+        async get() {
+          return null;
+        },
+        async set() {
+          throw new Error("Sheets 503 service unavailable");
+        },
+        async delete() {
+          throw new Error("Sheets 503 service unavailable");
+        },
+      };
+      const badDeps: FormDeps = {
+        candidates: failingCandidates,
+        contacts,
+        matches,
+        consent,
+      };
 
-    const ctx = createTestContext(555555555);
-    // owner_type is the first field and choice 'self' is valid input
-    await applyAnswer(badDeps, ctx, "U12345", {
-      kind: "choice",
-      id: "form:owner_type:self",
-    });
-    expect(ctx.sent.some((m) => m.text === copy.STORAGE_UNAVAILABLE)).toBe(
-      true,
-    );
+      const ctx = createTestContext(555555555);
+      // owner_type is the first field and choice 'self' is valid input
+      await applyAnswer(badDeps, ctx, "U12345", {
+        kind: "choice",
+        id: "form:owner_type:self",
+      });
+      expect(ctx.sent.some((m) => m.text === copy.STORAGE_UNAVAILABLE)).toBe(
+        true,
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   // 17. Restart/persistence behavior

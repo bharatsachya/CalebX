@@ -108,12 +108,14 @@ export async function handleCallbackQuery(
   const sectionId = parseSectionCallback(data);
   if (sectionId !== null) {
     await context.answer();
-    const profile = await loadProfile(deps, canonicalUserId);
-    await edit(copy.UPDATE_PICK_FIELD, {
-      reply_markup: fieldPickerKeyboard(
-        sectionId as SectionId,
-        profile.answers,
-      ),
+    serialize(tgUserId, async () => {
+      const profile = await loadProfile(deps, canonicalUserId);
+      await edit(copy.UPDATE_PICK_FIELD, {
+        reply_markup: fieldPickerKeyboard(
+          sectionId as SectionId,
+          profile.answers,
+        ),
+      });
     });
     return true;
   }
@@ -127,9 +129,11 @@ export async function handleCallbackQuery(
       return true;
     }
 
-    beginEdit(canonicalUserId, fieldId);
-    const profile = await loadProfile(deps, canonicalUserId);
-    await editPromptFor(context, field, profile.answers[fieldId]);
+    serialize(tgUserId, async () => {
+      beginEdit(canonicalUserId, fieldId);
+      const profile = await loadProfile(deps, canonicalUserId);
+      await editPromptFor(context, field, profile.answers[fieldId]);
+    });
     return true;
   }
 
