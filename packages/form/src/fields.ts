@@ -1,14 +1,8 @@
 /**
- * The questionnaire, derived column-for-column from `packages/db/src/migrations/`.
+ * The questionnaire, derived column-for-column from the domain requirements.
  *
  * Order here is the order the bot asks in, and the order columns appear in the
- * sheet. Appending a field is safe — `sheets:init` extends the header row and
- * the FSM picks the new question up for everyone who hasn't answered it yet. Do
- * not reorder or rename ids: a header that no longer matches an id orphans that
- * column's data.
- *
- * The three source files map one-to-one onto the three destination tables, so
- * `field.table` is never guesswork.
+ * sheet.
  */
 
 import { CANDIDATE_FIELDS } from "./fields.candidates.ts";
@@ -20,8 +14,8 @@ export const SECTIONS: readonly FormSection[] = [
   { id: "account", label: "Getting started" },
   { id: "biodata", label: "About you" },
   { id: "family", label: "Family" },
+  { id: "preferences", label: "Partner preferences" },
   { id: "contact", label: "Contact" },
-  { id: "preferences", label: "What you're looking for" },
 ] as const;
 
 /**
@@ -34,8 +28,8 @@ export const SKIPPED = "-";
 
 export const FORM_FIELDS: readonly FormField[] = [
   ...CANDIDATE_FIELDS,
-  ...CONTACT_FIELDS,
   ...PREFERENCE_FIELDS,
+  ...CONTACT_FIELDS,
 ] as const;
 
 /** Fields whose answers live in the sensitive `Contacts` tab. */

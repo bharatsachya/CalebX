@@ -367,7 +367,6 @@ describe("Form Bot Phone Linking & Identity Verification", () => {
       consentGranted: true,
       answers: {
         owner_type: "self",
-        language: "Hindi",
         full_name: "Rahul",
       },
     });
@@ -378,7 +377,7 @@ describe("Form Bot Phone Linking & Identity Verification", () => {
     expect(ctx.sent.some((m) => m.text === copy.RESUMING)).toBe(true);
     const profile = await loadProfile(deps, "U12345");
     const upcoming = nextField(profile.answers);
-    expect(upcoming?.id).toBe("gender"); // first unanswered field after owner_type, language & full_name
+    expect(upcoming?.id).toBe("gender"); // first unanswered field after owner_type & full_name
   });
 
   // 13. Existing user with all fields missing
@@ -411,7 +410,7 @@ describe("Form Bot Phone Linking & Identity Verification", () => {
     const ctx = createTestContext(555555555);
     await startCommand(deps, ctx, "U12345");
     const nextQ = nextField((await loadProfile(deps, "U12345")).answers);
-    expect(nextQ?.id).toBe("language");
+    expect(nextQ?.id).toBe("full_name");
   });
 
   // 15. Duplicate Telegram update
@@ -542,7 +541,6 @@ describe("Form Bot Phone Linking & Identity Verification", () => {
       consentGranted: true,
       answers: {
         owner_type: "self",
-        language: "Hindi",
         full_name: "Priya",
         gender: "female",
       },
@@ -551,7 +549,7 @@ describe("Form Bot Phone Linking & Identity Verification", () => {
     const profA = await loadProfile(deps, "U_A");
     const profB = await loadProfile(deps, "U_B");
 
-    expect(nextField(profA.answers)?.id).toBe("language");
+    expect(nextField(profA.answers)?.id).toBe("full_name");
     expect(nextField(profB.answers)?.id).toBe("dob");
   });
 });

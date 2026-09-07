@@ -93,34 +93,7 @@ export function advance(answers: Answers, input: Input): Advance {
     };
   }
 
-  return applied(deriveAnswers({ ...answers, [field.id]: checked.value }));
-}
-
-/**
- * Fields whose value follows from another that was just answered, so there is
- * nothing left to ask. Zero brothers means zero of them are married — the
- * question would only ever have one honest answer. Used by both `advance` and
- * `applyEdit`, so the rule holds during the initial questionnaire and any
- * later `/update`.
- *
- * Only fills in a blank; never overwrites an answer already on record. So if
- * `brothers` is edited from 0 up to a higher number via `/update`,
- * `brothers_married` stays at the "0" this derived rather than being cleared
- * for re-asking — this function only ever fills gaps, it doesn't retract a
- * value once a later edit invalidates the reasoning behind it.
- */
-function deriveAnswers(answers: Answers): Answers {
-  const derived = { ...answers };
-  if (
-    derived["brothers"] === "0" &&
-    derived["brothers_married"] === undefined
-  ) {
-    derived["brothers_married"] = "0";
-  }
-  if (derived["sisters"] === "0" && derived["sisters_married"] === undefined) {
-    derived["sisters_married"] = "0";
-  }
-  return derived;
+  return applied({ ...answers, [field.id]: checked.value });
 }
 
 /** Passes over an optional question, marking the cell so it isn't re-asked. */
@@ -182,7 +155,7 @@ export function applyEdit(
 
   return {
     outcome: "advanced",
-    answers: deriveAnswers({ ...answers, [field.id]: checked.value }),
+    answers: { ...answers, [field.id]: checked.value },
     prompts: [{ kind: "text", text: copy.updated(field, checked.value) }],
   };
 }

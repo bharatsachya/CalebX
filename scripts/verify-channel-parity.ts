@@ -88,7 +88,7 @@ check(
 check(
   "ONBOARDING_NAME_QUESTION",
   copy.ONBOARDING_NAME_QUESTION,
-  "What should I call you?",
+  "What should we call you?",
 );
 check(
   "onboardingCityQuestion",
