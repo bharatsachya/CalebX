@@ -67,9 +67,9 @@ export const forgottenMessage = (hints: CommandHints): string =>
 
 export const NEEDS_CONSENT_NUDGE = `Before I can chat, I need your okay to learn from our conversation.`;
 
-// --- Onboarding ---
+// --- Conversational Layer-1 Onboarding Questions ---
 
-export const ONBOARDING_NAME_QUESTION = `What should I call you?`;
+export const ONBOARDING_NAME_QUESTION = `What should we call you?`;
 
 export const onboardingCityQuestion = (name: string): string =>
   `Nice to meet you, ${name}! Which city are you based in?`;
@@ -77,6 +77,26 @@ export const onboardingCityQuestion = (name: string): string =>
 export const ONBOARDING_AGE_QUESTION = `And roughly how old are you?`;
 
 export const ONBOARDING_PURPOSE_QUESTION = `Last one — what kind of connection are you looking for on Bettle?`;
+
+// Layer-1 Matchmaking Question Conversational Prompts
+export const OWNER_TYPE_QUESTION = `Who are you filling this profile for?`;
+export const GENDER_QUESTION = `What is your gender?`;
+export const DOB_QUESTION = `What is your date of birth?`;
+export const CITY_QUESTION = `Which city are you based in?`;
+export const HEIGHT_QUESTION = `What is your height, in centimetres?`;
+export const MARITAL_STATUS_QUESTION = `What is your marital status?`;
+export const OCCUPATION_QUESTION = `What do you do?`;
+export const EDUCATION_QUESTION = `What is your highest level of education?`;
+export const INCOME_QUESTION = `What is your personal annual income?`;
+export const FAMILY_BACKGROUND_QUESTION = `Tell us a little about your family background.`;
+export const AGE_RANGE_QUESTION = `What age range are you looking for?`;
+export const LOCATION_PREF_QUESTION = `Where would you be comfortable with your partner being based?`;
+export const COMMUNITY_EXCLUSION_QUESTION = `Are there any communities or regions you would not consider?`;
+export const PARTNER_INCOME_QUESTION = `Is there a minimum income you would prefer for your partner?`;
+export const PARTNER_EDUCATION_QUESTION = `Is there an education level you prefer in your partner?`;
+export const PARTNER_DIET_QUESTION = `Do you have a preference regarding your partner's diet?`;
+export const PHONE_QUESTION = `Best phone number to reach you on?`;
+export const EMAIL_QUESTION = `And an email address?`;
 
 export const onboardingComplete = (name: string, _purpose?: string): string =>
   `You're all set, ${name}! 🎉 We've saved your profile and partner preferences.\n\nDirect chatting and matching aren't open quite yet, but we're actively reviewing profiles and will notify you as soon as your best matches are ready. Stay tuned!`;

@@ -1,12 +1,16 @@
 /**
  * Questions backed by `partner_prefs` (`005_partner_prefs.sql`).
  *
- * The structured columns are described there as hard gates a match must
- * satisfy; `looking_for` is a soft signal. In this prototype nothing filters
- * automatically — you read these while curating the Matches tab by hand.
+ * Match requirements and hard filters.
  */
 
-import { DIET_PREF_OPTIONS } from "./choices.ts";
+import {
+  COMMUNITY_REGION_EXCLUSION_OPTIONS,
+  DIET_PREF_OPTIONS,
+  EDUCATION_PREF_OPTIONS,
+  INCOME_MIN_OPTIONS,
+  LOCATION_PREF_OPTIONS,
+} from "./choices.ts";
 import type { FormField } from "./types.ts";
 
 export const PREFERENCE_FIELDS: readonly FormField[] = [
@@ -31,32 +35,39 @@ export const PREFERENCE_FIELDS: readonly FormField[] = [
     max: 100,
   },
   {
-    id: "community_pref",
+    id: "location_pref",
     section: "preferences",
     table: "partner_prefs",
-    kind: "text",
-    prompt: "Any community preference?",
-    hint: "For example: Garg (Mangal) — community name, gotra in brackets. Type 'any' if it doesn't matter",
+    kind: "choice",
+    prompt: "Where would you be comfortable with your partner being based?",
+    options: LOCATION_PREF_OPTIONS,
+    required: false,
+  },
+  {
+    id: "community_region_exclusion",
+    section: "preferences",
+    table: "partner_prefs",
+    kind: "choice",
+    prompt: "Are there any communities or regions you would not consider?",
+    options: COMMUNITY_REGION_EXCLUSION_OPTIONS,
     required: false,
   },
   {
     id: "income_min",
     section: "preferences",
     table: "partner_prefs",
-    kind: "integer",
-    prompt: "Minimum annual income you'd expect, in lakhs?",
-    hint: "Just the number — for example 10. Enter 0 for no minimum",
+    kind: "choice",
+    prompt: "Is there a minimum income you would prefer for your partner?",
+    options: INCOME_MIN_OPTIONS,
     required: false,
-    min: 0,
-    max: 10000,
   },
   {
     id: "education_pref",
     section: "preferences",
     table: "partner_prefs",
-    kind: "text",
-    prompt: "Any education preference?",
-    hint: "Type 'any' if it doesn't matter",
+    kind: "choice",
+    prompt: "Is there an education level you prefer in your partner?",
+    options: EDUCATION_PREF_OPTIONS,
     required: false,
   },
   {
@@ -64,17 +75,8 @@ export const PREFERENCE_FIELDS: readonly FormField[] = [
     section: "preferences",
     table: "partner_prefs",
     kind: "choice",
-    prompt: "Diet preference for a partner?",
+    prompt: "Do you have a preference regarding your partner's diet?",
     options: DIET_PREF_OPTIONS,
-    required: false,
-  },
-  {
-    id: "looking_for",
-    section: "preferences",
-    table: "partner_prefs",
-    kind: "long_text",
-    prompt: "Last one — in your own words, who are you hoping to meet?",
-    hint: "A sentence or two is plenty",
     required: false,
   },
 ] as const;

@@ -104,27 +104,10 @@ while (!isComplete(answers) && guard++ < 200) {
   answers = result.answers;
 }
 
-/**
- * Answering an `integer` field with its `field.min` here means brothers and
- * sisters are both answered "0" — which auto-derives brothers_married and
- * sisters_married to "0" too (form.fsm.ts's `deriveAnswers`), so this
- * walkthrough never asks those two. That is the intended behaviour: 0
- * siblings has only one honest "how many are married" answer.
- */
-const AUTO_DERIVED_FIELDS = ["brothers_married", "sisters_married"];
-
 check(
-  "every question was asked, except the ones auto-derived from a zero sibling count",
-  asked.length === FORM_FIELDS.length - AUTO_DERIVED_FIELDS.length,
-  `${asked.length}/${FORM_FIELDS.length - AUTO_DERIVED_FIELDS.length}`,
-);
-check(
-  "auto-derived fields were never individually asked",
-  AUTO_DERIVED_FIELDS.every((id) => !asked.includes(id)),
-);
-check(
-  "auto-derived fields still ended up answered as 0",
-  AUTO_DERIVED_FIELDS.every((id) => answers[id] === "0"),
+  "every question was asked",
+  asked.length === FORM_FIELDS.length,
+  `${asked.length}/${FORM_FIELDS.length}`,
 );
 check("form reports complete", isComplete(answers));
 check("no question asked twice", new Set(asked).size === asked.length);
@@ -270,14 +253,10 @@ check(
   "email" in contact && !("email" in candidate),
 );
 check(
-  "address routed to contact tab",
-  "address" in contact && !("address" in candidate),
-);
-check(
   "city stays in candidate tab",
   "city" in candidate && !("city" in contact),
 );
-check("looking_for stays in candidate tab", "looking_for" in candidate);
+check("location_pref stays in candidate tab", "location_pref" in candidate);
 check(
   "round-trips losslessly",
   JSON.stringify(mergeAnswers(candidate, contact)) ===
@@ -424,7 +403,10 @@ console.log("\n== /start (new user) ==");
 let rec = new Recorder();
 await startCommand(stores, rec, USER);
 check("sends the welcome", rec.sent[0]?.includes("few questions") ?? false);
-check("then asks question 1", rec.last().includes("Question 1 of 33"));
+check(
+  "then asks question 1",
+  rec.last().includes(`Question 1 of ${FORM_FIELDS.length}`),
+);
 check("nothing persisted before an answer", stores.candidates.rows.size === 0);
 
 // ── /match before finishing ──────────────────────────────────────────
@@ -565,7 +547,10 @@ await applyAnswer(stores, rec, "tg:777", {
 rec = new Recorder();
 await startCommand(stores, rec, "tg:777");
 check("resumes rather than re-welcoming", rec.sent[0] === copy.RESUMING);
-check("resumes at question 2", rec.last().includes("Question 2 of 33"));
+check(
+  "resumes at question 2",
+  rec.last().includes(`Question 2 of ${FORM_FIELDS.length}`),
+);
 
 console.log(
   `\n${failures === 0 ? "✅ form prototype verified" : `❌ ${failures} check(s) failed`}\n`,
