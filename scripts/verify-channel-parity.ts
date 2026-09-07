@@ -47,7 +47,7 @@ section("Copy renders byte-identically with Telegram's command hints");
 check(
   "privacyNotice",
   copy.privacyNotice(HINTS),
-  `👋 Hi, I'm Bettle.
+  `Hi, I'm 🫱🏻‍🫲🏼 Little half.
 
 I'm your matchmaking platform designed to help you find your ideal partner.
 
@@ -103,7 +103,7 @@ check(
 check(
   "ONBOARDING_PURPOSE_QUESTION",
   copy.ONBOARDING_PURPOSE_QUESTION,
-  "Last one — what kind of connection are you looking for on Bettle?",
+  "Last one — what kind of connection are you looking for on Little half?",
 );
 check(
   "ONBOARDING_SUMMARY_ACK",
@@ -163,7 +163,7 @@ for (const input of [
     check(
       "memory summary",
       result.memory.message,
-      "My name is Caleb, I'm 18-24 years old, based in Bhiwadi. I joined Bettle to: meet people, discover places, and find communities.",
+      "My name is Caleb, I'm 18-24 years old, based in Bhiwadi. I joined Little half to: meet people, discover places, and find communities.",
     );
     check(
       "memory ack",

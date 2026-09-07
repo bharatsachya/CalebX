@@ -33,7 +33,7 @@ export const COMMANDS = {
 } as const;
 
 export const WELCOME = [
-  "Hi — I'll take you through a few questions to build your matchmaking profile on Bettle.",
+  "Hi — I'll take you through a few questions to build your matchmaking profile on Little half.",
   "",
   `It's ${FORM_FIELDS.length} questions. You can stop any time and pick up where you left off with ${COMMANDS.start}.`,
   `Optional questions can be passed with ${COMMANDS.skip}.`,
@@ -51,7 +51,7 @@ export const NEEDS_CONSENT_NUDGE =
   "Before we start, I need your okay to store what you share.";
 
 export const PRIVACY_NOTICE = [
-  "Hi — I'll take you through a short questionnaire so we can identify your best partner matches on Bettle.",
+  "Hi — I'll take you through a short questionnaire so we can identify your best partner matches on Little half.",
   "",
   "Before we start:",
   "• I store what you tell me — biodata, family details, contact info, and what you're looking for — to find and curate your matches.",
@@ -97,7 +97,7 @@ export function completed(name: string): string {
   return [
     `Thanks${name ? `, ${escapeHtml(name)}` : ""} — that's everything! 🎉`,
     "",
-    "We've saved your profile and preferences on Bettle. We're currently in our onboarding phase — our team will review your profile to find your best matches, and we'll reach out as soon as matching begins.",
+    "We've saved your profile and preferences on Little half. We're currently in our onboarding phase — our team will review your profile to find your best matches, and we'll reach out as soon as matching begins.",
     "",
     `${COMMANDS.update} — change an answer`,
   ].join("\n");

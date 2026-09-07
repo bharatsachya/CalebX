@@ -42,11 +42,11 @@ export const CONSENT_DECLINE_LABEL_SHORT = "Not now";
 
 export const privacyNotice = (
   hints: CommandHints,
-): string => `👋 Hi, I'm Bettle.
+): string => `Hi, I'm 🫱🏻‍🫲🏼 Little Half.
 
-I'm your matchmaking platform designed to help you find your ideal partner.
+I’m designed to help you find your better half.
 
-We're currently in our onboarding phase to gather your details, preferences, and what you value in a partner before matching goes live.
+i'm currently in our onboarding phase to gather your details, preferences, and what you value in a partner before matching goes live.
 
 Before we start:
 • We store your details and preferences securely.
@@ -76,7 +76,7 @@ export const onboardingCityQuestion = (name: string): string =>
 
 export const ONBOARDING_AGE_QUESTION = `And roughly how old are you?`;
 
-export const ONBOARDING_PURPOSE_QUESTION = `Last one — what kind of connection are you looking for on Bettle?`;
+export const ONBOARDING_PURPOSE_QUESTION = `Last one — what kind of connection are you looking for on Little half?`;
 
 // Layer-1 Matchmaking Question Conversational Prompts
 export const OWNER_TYPE_QUESTION = `Who are you filling this profile for?`;
@@ -102,7 +102,7 @@ export const onboardingComplete = (name: string, _purpose?: string): string =>
   `You're all set, ${name}! 🎉 We've saved your profile and partner preferences.\n\nDirect chatting and matching aren't open quite yet, but we're actively reviewing profiles and will notify you as soon as your best matches are ready. Stay tuned!`;
 
 export const onboardingSummary = (record: OnboardingRecord): string =>
-  `My name is ${record.name ?? "friend"}, I'm ${record.age ?? "unknown age"} years old, based in ${record.city ?? "unknown city"}. I joined Bettle to: ${record.purpose ?? "find a partner"}.`;
+  `My name is ${record.name ?? "friend"}, I'm ${record.age ?? "unknown age"} years old, based in ${record.city ?? "unknown city"}. I joined Little half to: ${record.purpose ?? "find a partner"}.`;
 
 export const ONBOARDING_SUMMARY_ACK = `Got it — I'll keep that in mind.`;
 
