@@ -119,11 +119,20 @@ export class SheetTable {
    * columns — including any you added by hand — intact.
    */
   async write(userId: string, cells: Cells): Promise<void> {
-    const { headers, rowNumbers } = await this.load();
+    let { headers, rowNumbers } = await this.load();
     if (headers.length === 0) {
       throw new Error(
         `[sheets] Tab "${this.tab}" has no header row. Run: bun run sheets:init`,
       );
+    }
+
+    const missingHeaders = Object.keys(cells).filter(
+      (header) => !headers.includes(header),
+    );
+    if (missingHeaders.length > 0) {
+      headers = [...headers, ...missingHeaders];
+      await updateRow(this.tab, 1, headers);
+      this.invalidate();
     }
 
     const existing = (await this.read(userId)) ?? {};

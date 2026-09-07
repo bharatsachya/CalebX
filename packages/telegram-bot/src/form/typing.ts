@@ -23,11 +23,9 @@ export async function withTyping<T>(
     return fn();
   }
 
-  const send = () => {
-    candidate.sendChatAction!("typing").catch(() => undefined);
-  };
+  const send = () => candidate.sendChatAction!("typing").catch(() => undefined);
 
-  send();
+  await send();
   const interval = setInterval(send, 4000);
   try {
     return await fn();

@@ -221,6 +221,10 @@ export function registerFormHandlers(bot: Bot, deps: FormDeps): void {
         });
         return;
       }
+      if (text.trim().toLowerCase() === "skip") {
+        await skipCommand(deps, context, canonicalUserId);
+        return;
+      }
       await applyAnswer(deps, context, canonicalUserId, {
         kind: "text",
         value: text,
