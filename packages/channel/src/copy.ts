@@ -44,9 +44,9 @@ export const privacyNotice = (
   hints: CommandHints,
 ): string => `Hi, I'm 🫱🏻‍🫲🏼 Little Half.
 
-I’m designed to help you find your better half.
+I'm designed to help you find your better half.
 
-i'm currently in our onboarding phase to gather your details, preferences, and what you value in a partner before matching goes live.
+We're currently in our onboarding phase to gather your details, preferences, and what you value in a partner before matching goes live.
 
 Before we start:
 • We store your details and preferences securely.

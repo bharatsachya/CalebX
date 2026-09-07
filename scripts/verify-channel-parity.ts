@@ -47,9 +47,9 @@ section("Copy renders byte-identically with Telegram's command hints");
 check(
   "privacyNotice",
   copy.privacyNotice(HINTS),
-  `Hi, I'm 🫱🏻‍🫲🏼 Little half.
+  `Hi, I'm 🫱🏻‍🫲🏼 Little Half.
 
-I'm your matchmaking platform designed to help you find your ideal partner.
+I'm designed to help you find your better half.
 
 We're currently in our onboarding phase to gather your details, preferences, and what you value in a partner before matching goes live.
 
